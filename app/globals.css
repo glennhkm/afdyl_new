@@ -1,26 +1,130 @@
 @import "tailwindcss";
 
+/* Maqroo Arabic Font - same as mobile app */
+@font-face {
+  font-family: 'Maqroo';
+  src: url('/fonts/Maqroo-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FDFFF2;
+  --background-2: #FFFFFD;
+  --foreground: #CDDFEE;
+  --foreground-2: #E7E9D1;
+  --success: #14AE5C;
+  --error: #E53E3E;
+  --brown-brand: #BE9D77;
+  --neutral-01: #FFFFFF;
+  
+  /* Quran specific colors */
+  --primary-warm: #EDD1B0;
+  --secondary-gold: #EDDD6E;
+  --tertiary-orange: #E37100;
+  --accent-yellow: #F8FD89;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-2: var(--background-2);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-foreground-2: var(--foreground-2);
+  --color-brown-brand: var(--brown-brand);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-neutral-01: var(--neutral-01);
+  --font-sans: var(--font-comic-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Arabic Font Family - Maqroo as primary (same as mobile app) */
+.font-arabic {
+  font-family: 'Maqroo', var(--font-arabic), 'Amiri', 'Traditional Arabic', 'Scheherazade New', 'Arabic Typesetting', serif;
+  line-height: 2;
+  letter-spacing: 0.02em;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brown-brand);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a88a65;
+}
+
+/* Range input styling for settings sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #E37100;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(227, 113, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: #E37100;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(227, 113, 0, 0.3);
+}
+
+/* Animation for loading spinner */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
