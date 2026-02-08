@@ -20,8 +20,7 @@ const Home = () => {
         </h1>
 
         <p className="text-sm md:text-xl font-normal text-gray-700 max-w-3xl">
-          Lorem ipsum dolor sit amet consectetur. Diam faucibus in adipiscing
-          metus posuere pretium commodo.
+          Media pembelajaran interaktif Al-Qur&apos;an dan Iqra&apos; untuk anak-anak Disleksia
         </p>
 
         <Link href={'/dashboard'} className="bg-brown-brand text-xl tracking-wide hover:opacity-90 duration-200 font-bold text-white px-8 py-3 rounded-full">

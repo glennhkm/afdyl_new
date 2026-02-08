@@ -17,8 +17,8 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
-  title: "Afdyl - Belajar Al-Qur'an",
-  description: "Aplikasi pembelajaran Al-Qur'an untuk anak-anak dengan disleksia",
+  title: "Afdyl - Al-Qur'an for Dyslexic",
+  description: "Media pembelajaran interaktif Al-Quran dan Iqra untuk anak-anak Disleksia",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -32,12 +32,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Afdyl",
     title: "Afdyl - Belajar Al-Qur'an",
-    description: "Aplikasi pembelajaran Al-Qur'an untuk anak-anak dengan disleksia",
+    description: "Media pembelajaran interaktif Al-Quran dan Iqra untuk anak-anak Disleksia",
   },
   twitter: {
     card: "summary",
     title: "Afdyl - Belajar Al-Qur'an",
-    description: "Aplikasi pembelajaran Al-Qur'an untuk anak-anak dengan disleksia",
+    description: "Media pembelajaran interaktif Al-Quran dan Iqra untuk anak-anak Disleksia",
   },
 };
 
