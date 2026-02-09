@@ -8,7 +8,8 @@ import React, {
   useMemo,
   Suspense,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useTeacher } from "@/contexts/TeacherContext";
 import { Ayah, AyahTiming } from "@/types/quran";
 import {
   fetchAyahs,
@@ -19,7 +20,7 @@ import {
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 
-// Loading component for Suspense
+// Loading component
 const ReadingPageLoading = () => (
   <div className="w-full min-h-[82svh] flex items-center justify-center">
     <div className="flex flex-col items-center gap-4">
@@ -158,6 +159,12 @@ SettingsModal.displayName = 'SettingsModal';
 // Main content component
 const ReadingContent = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { 
+    currentRoom, 
+    currentStudent, 
+    markQuranProgress,
+  } = useTeacher();
 
   // URL params
   const type = (searchParams.get("type") as "surah" | "juz") || "surah";
@@ -176,6 +183,11 @@ const ReadingContent = () => {
   const [currentActiveWord, setCurrentActiveWord] = useState(0);
   const [autoHighlight, setAutoHighlight] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMarkConfirm, setShowMarkConfirm] = useState(false);
+  const [markedSuccess, setMarkedSuccess] = useState(false);
+
+  // Get progress directly from currentStudent
+  const quranProgress = currentStudent?.quranProgress;
 
   // Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -191,6 +203,30 @@ const ReadingContent = () => {
     () => Math.max(6, Math.min(18, fontSize * 0.35)),
     [fontSize]
   );
+
+  // Redirect if no student
+  useEffect(() => {
+    if (!currentRoom || !currentStudent) {
+      router.push("/guru");
+    }
+  }, [currentRoom, currentStudent, router]);
+
+  // Set initial active ayah based on saved progress
+  useEffect(() => {
+    if (quranProgress && quranProgress.lastSurah === number && ayahs.length > 0) {
+      const savedAyahIndex = ayahs.findIndex(a => a.number === quranProgress.lastAyah);
+      if (savedAyahIndex !== -1) {
+        setCurrentActiveAyah(savedAyahIndex);
+        // Scroll to saved position after a short delay
+        setTimeout(() => {
+          ayahRefs.current[savedAyahIndex]?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 500);
+      }
+    }
+  }, [quranProgress, number, ayahs]);
 
   // Load ayahs
   const loadAyahs = useCallback(async () => {
@@ -234,7 +270,7 @@ const ReadingContent = () => {
     }
   }, []);
 
-  // Stop auto highlight - defined before playAyahAudio to avoid dependency issues
+  // Stop auto highlight
   const stopAutoHighlight = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -255,7 +291,6 @@ const ReadingContent = () => {
         return;
       }
 
-      // If same ayah is playing, pause it
       if (currentActiveAyah === ayahIndex && autoHighlight) {
         stopAutoHighlight();
         return;
@@ -267,7 +302,6 @@ const ReadingContent = () => {
 
       scrollToAyah(ayahIndex);
 
-      // Create and play audio
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -303,10 +337,8 @@ const ReadingContent = () => {
       });
 
       audio.addEventListener("ended", () => {
-        // Move to next ayah - use recursive pattern via setTimeout
         if (ayahIndex < ayahs.length - 1) {
           setTimeout(() => {
-            // Re-trigger play for next ayah
             const nextAyah = ayahs[ayahIndex + 1];
             if (nextAyah?.audio) {
               setCurrentActiveAyah(ayahIndex + 1);
@@ -354,6 +386,19 @@ const ReadingContent = () => {
     },
     [autoHighlight, scrollToAyah]
   );
+
+  // Mark current position as progress
+  const handleMarkProgress = useCallback(async () => {
+    if (ayahs.length === 0) return;
+    
+    const currentAyah = ayahs[currentActiveAyah];
+    
+    await markQuranProgress(number, currentAyah.number);
+    
+    setShowMarkConfirm(false);
+    setMarkedSuccess(true);
+    setTimeout(() => setMarkedSuccess(false), 3000);
+  }, [ayahs, currentActiveAyah, number, markQuranProgress]);
 
   // Render word
   const renderWord = useCallback(
@@ -438,6 +483,7 @@ const ReadingContent = () => {
     (ayah: Ayah, index: number) => {
       const isActiveAyah = index === currentActiveAyah;
       const words = ayah.words || [];
+      const isMarkedAyah = quranProgress?.lastAyah === ayah.number && quranProgress?.lastSurah === number;
 
       return (
         <div
@@ -446,14 +492,16 @@ const ReadingContent = () => {
             ayahRefs.current[index] = el;
           }}
           onClick={() => handleAyahClick(index)}
-          className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-3 sm:mb-4 transition-all duration-300 cursor-pointer ring-1 ring-black/10 ${
+          className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-3 sm:mb-4 transition-all duration-300 cursor-pointer ring-1 ${
             isActiveAyah
-              ? "bg-foreground-2 shadow-lg opacity-100"
-              : "opacity-40 hover:opacity-80"
+              ? "bg-foreground-2 shadow-lg opacity-100 ring-black/10"
+              : isMarkedAyah
+              ? "bg-emerald-50 opacity-80 ring-emerald-300 ring-2"
+              : "opacity-40 hover:opacity-80 ring-black/10"
           }`}
         >
-          {/* Play Button */}
-          <div className="flex items-center mb-3 sm:mb-4">
+          {/* Top Bar with Play Button and Mark Indicator */}
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -470,6 +518,13 @@ const ReadingContent = () => {
                 className="w-4 h-4 sm:w-5 sm:h-5 text-black"
               />
             </button>
+            
+            {isMarkedAyah && (
+              <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs">
+                <Icon name="RiBookmarkFill" className="w-3 h-3" />
+                <span>Terakhir dibaca</span>
+              </div>
+            )}
           </div>
 
           {/* Arabic Text */}
@@ -489,8 +544,7 @@ const ReadingContent = () => {
                   wordSpacing: `${wordSpacing}px`,
                 }}
               >
-                {ayah.text}{" "}
-                {renderAyahNumber(ayah.number)}
+                {ayah.text} {renderAyahNumber(ayah.number)}
               </p>
             )}
           </div>
@@ -538,13 +592,20 @@ const ReadingContent = () => {
       renderAyahNumber,
       fontSize,
       wordSpacing,
+      quranProgress,
+      number,
     ]
   );
 
+  if (!currentStudent) {
+    return null;
+  }
+
   return (
-    <div className="w-full min-h-[82svh] overflow-x-hidden">
+    <div className="w-full min-h-[82svh] overflow-x-hidden px-2 lg:px-6">
       <Topbar
         title={name || `${type === "surah" ? "Surah" : "Juz"} ${number}`}
+        onBackClick={() => router.push("/guru/modul/quran")}
         actionButton={
           <button
             onClick={() => setShowSettings(true)}
@@ -558,6 +619,29 @@ const ReadingContent = () => {
           </button>
         }
       />
+
+      {/* Student Banner */}
+      <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3 mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon name="RiUserLine" className="w-5 h-5 text-emerald-600" />
+          <span className="text-emerald-700 font-medium">{currentStudent.name}</span>
+        </div>
+        <button
+          onClick={() => setShowMarkConfirm(true)}
+          className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1"
+        >
+          <Icon name="RiBookmarkLine" className="w-4 h-4" />
+          Tandai
+        </button>
+      </div>
+
+      {/* Success Message */}
+      {markedSuccess && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-6 py-3 rounded-full shadow-lg z-50 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <Icon name="RiCheckLine" className="w-5 h-5" />
+          <span>Progress berhasil ditandai!</span>
+        </div>
+      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -586,7 +670,7 @@ const ReadingContent = () => {
       {/* Ayahs List */}
       {!isLoading && !errorMessage && ayahs.length > 0 && (
         <div ref={containerRef} className="pb-24 sm:pb-32">
-          {/* Bismillah Header (except for Surah 1 and 9) */}
+          {/* Bismillah Header */}
           {type === "surah" && number !== 1 && number !== 9 && (
             <div className="text-center py-6 mb-4">
               <p
@@ -618,7 +702,7 @@ const ReadingContent = () => {
                 : "bg-gray-100 text-black"
             }`}
           >
-            {showMeaning ? "Sembunyikan" : "Tampilkan"}
+            {showMeaning ? "Sembunyikan" : "Terjemah"}
           </button>
           <button
             onClick={() =>
@@ -636,6 +720,50 @@ const ReadingContent = () => {
             />
             {autoHighlight ? "Stop" : "Putar"}
           </button>
+          <button
+            onClick={() => setShowMarkConfirm(true)}
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition bg-emerald-500 text-white flex items-center gap-1"
+          >
+            <Icon name="RiBookmarkLine" className="w-3 h-3 sm:w-4 sm:h-4" />
+            Tandai
+          </button>
+        </div>
+      )}
+
+      {/* Mark Confirmation Modal */}
+      {showMarkConfirm && ayahs.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 z-100 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icon name="RiBookmarkLine" className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Tandai Progress</h3>
+              <p className="text-gray-600 text-sm">
+                Tandai bacaan {currentStudent.name} sampai:
+              </p>
+              <div className="mt-3 p-3 bg-emerald-50 rounded-xl">
+                <p className="text-emerald-800 font-semibold">{name}</p>
+                <p className="text-emerald-600 text-sm">
+                  Ayat {ayahs[currentActiveAyah]?.number}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowMarkConfirm(false)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleMarkProgress}
+                className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                Tandai
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -654,7 +782,7 @@ const ReadingContent = () => {
 };
 
 // Main component with Suspense wrapper
-const ReadingPage = () => {
+const TeacherQuranReadPage = () => {
   return (
     <Suspense fallback={<ReadingPageLoading />}>
       <ReadingContent />
@@ -662,4 +790,4 @@ const ReadingPage = () => {
   );
 };
 
-export default ReadingPage;
+export default TeacherQuranReadPage;

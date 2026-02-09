@@ -1,7 +1,6 @@
 "use client";
 
 import Topbar from "@/components/topbar";
-import React from "react";
 import Link from "next/link";
 import Icon from "@/components/Icon";
 
@@ -47,8 +46,8 @@ const ClientPage = () => {
   ];
 
   return (
-    <div className="w-full h-full overflow-x-hidden">
-      <Topbar title="Yuk Belajar!" showBackButton={false} />
+    <div className="w-full h-full overflow-x-hidden pt-4">
+      <Topbar title="Yuk Belajar!" />
       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {menu.map((item, index) => (
           <Link
