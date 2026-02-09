@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTeacher } from "@/contexts/TeacherContext";
 import Icon from "@/components/Icon";
 import Topbar from "@/components/topbar";
+import { TeacherPageSkeleton } from "@/components/ui/Skeleton";
 
 const TeacherModePage = () => {
   const router = useRouter();
@@ -117,14 +118,7 @@ const TeacherModePage = () => {
 
   // Show loading state
   if (isLoading) {
-    return (
-      <div className="w-full min-h-[82svh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Memuat...</p>
-        </div>
-      </div>
-    );
+    return <TeacherPageSkeleton />;
   }
 
   return (
@@ -317,8 +311,12 @@ const TeacherModePage = () => {
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Membuat...
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:0.2s]" />
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:0.4s]" />
+                  </div>
+                  <span>Membuat...</span>
                 </>
               ) : (
                 <>
@@ -374,8 +372,12 @@ const TeacherModePage = () => {
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Mencari...
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:0.2s]" />
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:0.4s]" />
+                  </div>
+                  <span>Mencari...</span>
                 </>
               ) : (
                 <>

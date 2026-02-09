@@ -268,6 +268,55 @@ async function deleteRoomFromSupabase(roomId: string): Promise<void> {
   }
 }
 
+/**
+ * Sync room from Supabase - used for cross-device sync
+ * Fetches latest data from Supabase and updates localStorage
+ */
+export async function syncRoomFromCloud(roomId: string, pin: string): Promise<Room | null> {
+  try {
+    console.log('[syncRoomFromCloud] Starting sync for room:', roomId);
+    
+    // Fetch from Supabase
+    const remoteRoom = await fetchRoomFromSupabase(pin);
+    
+    if (remoteRoom) {
+      console.log('[syncRoomFromCloud] Got remote room with', remoteRoom.students.length, 'students');
+      
+      // Merge with local data - remote takes priority for students
+      const localRoom = getRoomByIdFromLocal(roomId);
+      
+      if (localRoom) {
+        // Merge students: keep local students not in remote, add all remote students
+        const remoteStudentIds = new Set(remoteRoom.students.map(s => s.id));
+        
+        // Students that exist only locally (not synced to cloud yet)
+        const localOnlyStudents = localRoom.students.filter(s => !remoteStudentIds.has(s.id));
+        
+        // Combine: all remote students + local-only students
+        remoteRoom.students = [...remoteRoom.students, ...localOnlyStudents];
+        
+        console.log('[syncRoomFromCloud] Merged students count:', remoteRoom.students.length);
+      }
+      
+      // Update localStorage with merged data
+      saveRoomToLocal(remoteRoom);
+      
+      // Also backup merged data to Supabase
+      backupRoomToSupabase(remoteRoom);
+      
+      console.log('[syncRoomFromCloud] Sync completed successfully');
+      return remoteRoom;
+    }
+    
+    console.log('[syncRoomFromCloud] No remote room found, returning local');
+    return getRoomByIdFromLocal(roomId);
+  } catch (error) {
+    console.error('[syncRoomFromCloud] Sync failed:', error);
+    // Return local data as fallback
+    return getRoomByIdFromLocal(roomId);
+  }
+}
+
 async function deleteStudentFromSupabase(studentId: string): Promise<void> {
   try {
     await supabase.from('students').delete().eq('id', studentId);

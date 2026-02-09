@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTeacher } from "@/contexts/TeacherContext";
 import Icon from "@/components/Icon";
 import Topbar from "@/components/topbar";
+import { RoomPageSkeleton } from "@/components/ui/Skeleton";
 
 const RoomManagementPage = () => {
   const router = useRouter();
@@ -19,6 +20,7 @@ const RoomManagementPage = () => {
     deleteRoom,
     leaveRoom,
     refreshRooms,
+    syncFromCloud,
   } = useTeacher();
 
   const [newStudentName, setNewStudentName] = useState("");
@@ -28,6 +30,8 @@ const RoomManagementPage = () => {
   const [editingStudentName, setEditingStudentName] = useState("");
   const [showPinCopied, setShowPinCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // Redirect if no room is active
   useEffect(() => {
@@ -42,15 +46,21 @@ const RoomManagementPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Handle sync from cloud
+  const handleSyncFromCloud = async () => {
+    setIsSyncing(true);
+    try {
+      await syncFromCloud();
+      setLastSyncTime(new Date());
+    } catch (err) {
+      console.error('Sync failed:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (isLoading || !currentRoom) {
-    return (
-      <div className="w-full min-h-[82svh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Memuat...</p>
-        </div>
-      </div>
-    );
+    return <RoomPageSkeleton />;
   }
 
   const handleAddStudent = async () => {
@@ -189,11 +199,27 @@ const RoomManagementPage = () => {
           <div className="text-emerald-100 text-sm">
             <span>Guru: {currentRoom.teacherName}</span>
           </div>
-          <div className="flex items-center gap-2 text-emerald-100 text-xs">
-            <Icon name="RiCloudLine" className="w-4 h-4" />
-            <span>Tersinkronisasi</span>
-          </div>
+          {/* Sync Button */}
+          <button
+            onClick={handleSyncFromCloud}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors disabled:opacity-50"
+            title="Sinkronkan data dari cloud"
+          >
+            <Icon 
+              name="RiRefreshLine" 
+              className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} 
+            />
+            <span className="text-xs">
+              {isSyncing ? 'Menyinkronkan...' : 'Refresh'}
+            </span>
+          </button>
         </div>
+        {lastSyncTime && (
+          <div className="mt-2 text-emerald-100 text-xs text-right">
+            Terakhir diperbarui: {lastSyncTime.toLocaleTimeString('id-ID')}
+          </div>
+        )}
       </div>
 
       {/* Add Student Form */}
@@ -229,7 +255,11 @@ const RoomManagementPage = () => {
             className="px-5 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1 disabled:bg-emerald-400"
           >
             {isSubmitting ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:0.2s]" />
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:0.4s]" />
+              </div>
             ) : (
               <>
                 <Icon name="RiAddLine" className="w-5 h-5" />
@@ -402,7 +432,11 @@ const RoomManagementPage = () => {
                 className="flex-1 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:bg-red-400"
               >
                 {isSubmitting ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:0.2s]" />
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:0.4s]" />
+                  </div>
                 ) : (
                   "Hapus"
                 )}

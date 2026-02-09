@@ -13,16 +13,10 @@ import {
   IqraLetter,
   IqraPage,
 } from "@/lib/services/iqra-service";
+import { IqraReadSkeleton } from "@/components/ui/Skeleton";
 
 // Loading component
-const LoadingSpinner = () => (
-  <div className="w-full min-h-[82svh] flex items-center justify-center overflow-x-hidden">
-    <div className="flex flex-col items-center gap-4">
-      <div className="w-12 h-12 border-4 border-brown-brand border-t-transparent rounded-full animate-spin" />
-      <p className="text-black text-lg">Memuat...</p>
-    </div>
-  </div>
-);
+const LoadingSpinner = () => <IqraReadSkeleton />;
 
 // Letter Modal Component
 interface LetterModalProps {

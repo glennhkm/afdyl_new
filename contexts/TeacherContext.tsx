@@ -25,6 +25,7 @@ import {
   updateIqraProgress,
   markJilidCompleted,
   markHijaiyahLetterCompleted,
+  syncRoomFromCloud,
 } from '@/lib/services/teacher-service';
 
 // ============================================
@@ -45,6 +46,7 @@ interface TeacherContextValue {
   leaveRoom: () => void;
   deleteRoom: (roomId: string) => Promise<void>;
   refreshRooms: () => void;
+  syncFromCloud: () => Promise<Room | null>;
 
   // Student operations
   selectStudent: (studentId: string) => void;
@@ -132,6 +134,35 @@ export function TeacherProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, []); // Empty dependency array - now stable!
+
+  // Sync from cloud - fetch latest data from Supabase
+  const syncFromCloud = useCallback(async (): Promise<Room | null> => {
+    const currentSession = sessionRef.current;
+    if (!currentSession) return null;
+    
+    setIsLoading(true);
+    try {
+      const syncedRoom = await syncRoomFromCloud(currentSession.roomId, currentSession.roomPin);
+      if (syncedRoom) {
+        setCurrentRoom(syncedRoom);
+        setRooms(getAllRooms());
+        
+        // Also update current student if selected
+        const currentStudentValue = currentStudentRef.current;
+        if (currentStudentValue) {
+          const updatedStudent = syncedRoom.students.find(s => s.id === currentStudentValue.id);
+          if (updatedStudent) {
+            setCurrentStudent(updatedStudent);
+          }
+        }
+        
+        return syncedRoom;
+      }
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Create room
   const createRoom = useCallback(async (className: string, teacherName: string): Promise<Room | null> => {
@@ -322,6 +353,7 @@ export function TeacherProvider({ children }: { children: React.ReactNode }) {
     leaveRoom,
     deleteRoom: deleteRoomHandler,
     refreshRooms,
+    syncFromCloud,
     selectStudent,
     clearStudent: clearStudentHandler,
     addStudent: addStudentHandler,

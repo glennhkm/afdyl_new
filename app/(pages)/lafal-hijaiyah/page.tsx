@@ -175,7 +175,7 @@ const LafalHijaiyahPage = () => {
               <div className="flex items-start gap-2">
                 <Icon
                   name={getStatusIcon()}
-                  className={`shrink-0 ${status === "processing" ? "animate-spin" : ""}`}
+                  className={`shrink-0 ${status === "processing" ? "animate-pulse" : ""}`}
                   size={16}
                 />
                 <p className="text-xs sm:text-sm flex-1">{statusMessage}</p>

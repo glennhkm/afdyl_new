@@ -139,9 +139,16 @@ const InstallPrompt: React.FC = () => {
   if (!isClient) {
     return (
       <div className="fixed inset-0 bg-[#FDF6E3] z-9999 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-[#C98151] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[#C98151] font-medium">Memuat...</p>
+        <div className="w-full max-w-md px-6 animate-pulse">
+          <div className="flex flex-col items-center gap-6">
+            <div className="w-24 h-24 bg-[#C98151]/20 rounded-3xl" />
+            <div className="h-6 w-32 bg-[#C98151]/20 rounded-full" />
+            <div className="w-full space-y-3">
+              <div className="h-4 bg-[#C98151]/10 rounded-full w-3/4 mx-auto" />
+              <div className="h-4 bg-[#C98151]/10 rounded-full w-1/2 mx-auto" />
+            </div>
+            <div className="h-12 w-full bg-[#C98151]/20 rounded-full mt-4" />
+          </div>
         </div>
       </div>
     );

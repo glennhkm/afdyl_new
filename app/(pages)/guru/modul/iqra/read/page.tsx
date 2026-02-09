@@ -15,12 +15,26 @@ import {
   IqraPage,
 } from "@/lib/services/iqra-service";
 
-// Loading component
+// Loading component - Skeleton version
 const LoadingSpinner = () => (
-  <div className="w-full min-h-[82svh] flex items-center justify-center overflow-x-hidden">
-    <div className="flex flex-col items-center gap-4">
-      <div className="w-12 h-12 border-4 border-brown-brand border-t-transparent rounded-full animate-spin" />
-      <p className="text-black text-lg">Memuat...</p>
+  <div className="w-full min-h-[82svh] pt-20 px-4 overflow-x-hidden">
+    <div className="space-y-4 animate-pulse">
+      <div className="bg-white rounded-2xl p-4">
+        <div className="h-8 w-32 bg-[#E37100]/10 rounded mb-4" />
+        <div className="grid grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+            <div key={i} className="h-12 bg-gray-100 rounded-lg" />
+          ))}
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl p-4">
+        <div className="h-8 w-40 bg-gray-200 rounded mb-4" />
+        <div className="grid grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+            <div key={i} className="h-12 bg-gray-100 rounded-lg" />
+          ))}
+        </div>
+      </div>
     </div>
   </div>
 );

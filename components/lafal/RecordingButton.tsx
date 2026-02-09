@@ -51,8 +51,12 @@ const RecordingButton: React.FC<RecordingButtonProps> = ({
         }`}
       >
         {isProcessing ? (
-          /* Loading spinner */
-          <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-[#C98151] border-t-transparent rounded-full animate-spin" />
+          /* Loading pulsing dots */
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#C98151] rounded-full animate-pulse" />
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#C98151] rounded-full animate-pulse [animation-delay:0.2s]" />
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#C98151] rounded-full animate-pulse [animation-delay:0.4s]" />
+          </div>
         ) : isListening ? (
           /* Stop icon (square) */
           <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-sm" />

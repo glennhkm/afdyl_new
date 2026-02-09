@@ -11,6 +11,7 @@ import {
 } from "@/lib/services/quran-service";
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
+import { QuranPageSkeleton } from "@/components/ui/Skeleton";
 
 type TabType = "surah" | "juz";
 
@@ -197,12 +198,7 @@ const QuranPage = () => {
       {/* Content Area */}
       <div className="rounded-t-3xl min-h-[60vh]">
         {/* Loading State */}
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12 sm:py-20">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-[#E37100] border-t-transparent rounded-full animate-spin" />
-            <p className="mt-3 sm:mt-4 text-black text-base sm:text-lg">Memuat data...</p>
-          </div>
-        )}
+        {isLoading && <QuranPageSkeleton />}
 
         {/* Error State */}
         {!isLoading && errorMessage && (

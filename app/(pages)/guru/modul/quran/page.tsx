@@ -231,9 +231,21 @@ const TeacherQuranPage = () => {
       <div className="rounded-t-3xl min-h-[60vh]">
         {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12 sm:py-20">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-[#E37100] border-t-transparent rounded-full animate-spin" />
-            <p className="mt-3 sm:mt-4 text-black text-base sm:text-lg">Memuat data...</p>
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 px-1 py-4 animate-pulse">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="bg-white rounded-2xl border-2 border-gray-100 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#E37100]/10 rounded-full" />
+                    <div>
+                      <div className="h-5 w-24 bg-gray-200 rounded mb-2" />
+                      <div className="h-3 w-32 bg-gray-100 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-8 w-16 bg-[#E37100]/10 rounded" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

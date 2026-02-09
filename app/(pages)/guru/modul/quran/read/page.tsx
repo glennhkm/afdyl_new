@@ -20,12 +20,17 @@ import {
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 
-// Loading component
+// Loading component - Skeleton version
 const ReadingPageLoading = () => (
-  <div className="w-full min-h-[82svh] flex items-center justify-center">
-    <div className="flex flex-col items-center gap-4">
-      <div className="w-12 h-12 border-4 border-[#E37100] border-t-transparent rounded-full animate-spin" />
-      <p className="text-black text-lg">Memuat...</p>
+  <div className="w-full min-h-[82svh] pt-20 px-4">
+    <div className="space-y-4 animate-pulse">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="bg-white rounded-xl border-2 border-gray-100 p-4">
+          <div className="h-10 bg-[#E37100]/10 rounded mb-3" />
+          <div className="h-6 bg-gray-100 rounded mb-2" />
+          <div className="h-4 bg-gray-50 rounded w-3/4" />
+        </div>
+      ))}
     </div>
   </div>
 );
@@ -645,9 +650,14 @@ const ReadingContent = () => {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="flex flex-col items-center justify-center py-12 sm:py-20">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-[#E37100] border-t-transparent rounded-full animate-spin" />
-          <p className="mt-3 sm:mt-4 text-black text-base sm:text-lg">Memuat ayat...</p>
+        <div className="space-y-4 animate-pulse">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="bg-white rounded-xl border-2 border-gray-100 p-4">
+              <div className="h-10 bg-[#E37100]/10 rounded mb-3" />
+              <div className="h-6 bg-gray-100 rounded mb-2" />
+              <div className="h-4 bg-gray-50 rounded w-3/4" />
+            </div>
+          ))}
         </div>
       )}
 

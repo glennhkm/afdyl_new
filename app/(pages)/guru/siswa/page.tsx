@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTeacher } from "@/contexts/TeacherContext";
 import Icon from "@/components/Icon";
 import Topbar from "@/components/topbar";
+import { StudentDashboardSkeleton } from "@/components/ui/Skeleton";
 
 const StudentDashboardPage = () => {
   const router = useRouter();
@@ -29,14 +30,7 @@ const StudentDashboardPage = () => {
   }, [isLoading, currentRoom, currentStudent, router]);
 
   if (isLoading || !currentRoom || !currentStudent) {
-    return (
-      <div className="w-full min-h-[82svh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Memuat...</p>
-        </div>
-      </div>
-    );
+    return <StudentDashboardSkeleton />;
   }
 
   const handleBackToClass = () => {
