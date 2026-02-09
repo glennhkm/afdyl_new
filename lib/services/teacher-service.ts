@@ -159,6 +159,8 @@ async function backupRoomToSupabase(room: Room): Promise<void> {
 
 async function fetchRoomFromSupabase(pin: string): Promise<Room | null> {
   try {
+    console.log('[fetchRoomFromSupabase] Fetching room with PIN:', pin);
+    
     // Fetch room by PIN
     const { data: roomData, error: roomError } = await supabase
       .from('rooms')
@@ -166,7 +168,12 @@ async function fetchRoomFromSupabase(pin: string): Promise<Room | null> {
       .eq('pin', pin)
       .single();
 
-    if (roomError || !roomData) return null;
+    console.log('[fetchRoomFromSupabase] Supabase response:', { roomData, roomError });
+
+    if (roomError || !roomData) {
+      console.log('[fetchRoomFromSupabase] No room found in Supabase');
+      return null;
+    }
 
     // Fetch students for this room
     const { data: studentsData } = await supabase
@@ -272,16 +279,22 @@ export function getRoomById(roomId: string): Room | null {
 export async function getRoomByPin(pin: string): Promise<Room | null> {
   // First check localStorage
   const localRoom = getRoomByPinFromLocal(pin);
-  if (localRoom) return localRoom;
+  if (localRoom) {
+    console.log('[getRoomByPin] Found room in localStorage:', localRoom.pin);
+    return localRoom;
+  }
 
   // If not found locally, try Supabase (for cross-device access)
+  console.log('[getRoomByPin] Room not in localStorage, checking Supabase for PIN:', pin);
   const remoteRoom = await fetchRoomFromSupabase(pin);
   if (remoteRoom) {
+    console.log('[getRoomByPin] Found room in Supabase:', remoteRoom.pin);
     // Save to localStorage for future access
     saveRoomToLocal(remoteRoom);
     return remoteRoom;
   }
 
+  console.log('[getRoomByPin] Room not found anywhere for PIN:', pin);
   return null;
 }
 

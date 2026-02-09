@@ -75,13 +75,17 @@ const TeacherModePage = () => {
     setError("");
 
     try {
+      console.log('[handleJoinRoom] Attempting to join with PIN:', roomPin);
       const room = await joinRoom(roomPin);
+      console.log('[handleJoinRoom] Result:', room);
+      
       if (room) {
         router.push("/guru/kelas");
       } else {
-        setError("Kelas tidak ditemukan. Periksa kembali PIN Anda.");
+        setError("Kelas tidak ditemukan. PIN yang Anda masukkan tidak terdaftar.");
       }
-    } catch {
+    } catch (err) {
+      console.error('[handleJoinRoom] Error:', err);
       setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);

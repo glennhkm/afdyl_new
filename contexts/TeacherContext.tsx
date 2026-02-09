@@ -161,9 +161,17 @@ export function TeacherProvider({ children }: { children: React.ReactNode }) {
   const joinRoom = useCallback(async (pin: string): Promise<Room | null> => {
     setIsLoading(true);
     try {
+      console.log('[TeacherContext.joinRoom] Attempting to join room with PIN:', pin);
+      
       // This will check localStorage first, then Supabase
       const room = await getRoomByPin(pin);
-      if (!room) return null;
+      
+      if (!room) {
+        console.log('[TeacherContext.joinRoom] Room not found for PIN:', pin);
+        return null;
+      }
+
+      console.log('[TeacherContext.joinRoom] Room found:', room.className);
 
       const newSession: TeacherSession = {
         roomId: room.id,
