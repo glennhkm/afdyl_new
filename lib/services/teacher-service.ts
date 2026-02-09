@@ -111,8 +111,10 @@ export function clearCurrentStudent(): void {
 
 async function backupRoomToSupabase(room: Room): Promise<void> {
   try {
+    console.log('[backupRoomToSupabase] Starting backup for room:', room.id, room.pin);
+    
     // Upsert room
-    await supabase.from('rooms').upsert({
+    const { error: roomError } = await supabase.from('rooms').upsert({
       id: room.id,
       pin: room.pin,
       class_name: room.className,
@@ -120,47 +122,71 @@ async function backupRoomToSupabase(room: Room): Promise<void> {
       created_at: room.createdAt,
     }, { onConflict: 'id' });
 
+    if (roomError) {
+      console.error('[backupRoomToSupabase] Room upsert failed:', roomError);
+      return;
+    }
+    
+    console.log('[backupRoomToSupabase] Room upserted successfully');
+
     // Backup students
     for (const student of room.students) {
-      await supabase.from('students').upsert({
+      const { error: studentError } = await supabase.from('students').upsert({
         id: student.id,
         room_id: room.id,
         name: student.name,
         joined_at: student.joinedAt,
       }, { onConflict: 'id' });
 
+      if (studentError) {
+        console.error('[backupRoomToSupabase] Student upsert failed:', studentError);
+        continue;
+      }
+
       // Backup quran progress
-      await supabase.from('quran_progress').upsert({
+      const { error: quranError } = await supabase.from('quran_progress').upsert({
         student_id: student.id,
         last_surah: student.quranProgress.lastSurah,
         last_ayah: student.quranProgress.lastAyah,
         completed_surahs: student.quranProgress.completedSurahs,
       }, { onConflict: 'student_id' });
 
+      if (quranError) {
+        console.error('[backupRoomToSupabase] Quran progress upsert failed:', quranError);
+      }
+
       // Backup iqra progress
-      await supabase.from('iqra_progress').upsert({
+      const { error: iqraError } = await supabase.from('iqra_progress').upsert({
         student_id: student.id,
         current_jilid: student.iqraProgress.currentJilid,
         current_page: student.iqraProgress.currentPage,
         completed_jilids: student.iqraProgress.completedJilids,
       }, { onConflict: 'student_id' });
 
+      if (iqraError) {
+        console.error('[backupRoomToSupabase] Iqra progress upsert failed:', iqraError);
+      }
+
       // Backup hijaiyah progress
-      await supabase.from('hijaiyah_progress').upsert({
+      const { error: hijaiyahError } = await supabase.from('hijaiyah_progress').upsert({
         student_id: student.id,
         completed_letters: student.hijaiyahProgress.completedLetters,
       }, { onConflict: 'student_id' });
+
+      if (hijaiyahError) {
+        console.error('[backupRoomToSupabase] Hijaiyah progress upsert failed:', hijaiyahError);
+      }
     }
+    
+    console.log('[backupRoomToSupabase] Backup completed for room:', room.id);
   } catch (error) {
-    console.error('Backup to Supabase failed:', error);
+    console.error('[backupRoomToSupabase] Backup to Supabase failed:', error);
     // Don't throw - backup failure shouldn't break the app
   }
 }
 
 async function fetchRoomFromSupabase(pin: string): Promise<Room | null> {
   try {
-    console.log('[fetchRoomFromSupabase] Fetching room with PIN:', pin);
-    
     // Fetch room by PIN
     const { data: roomData, error: roomError } = await supabase
       .from('rooms')
@@ -168,12 +194,7 @@ async function fetchRoomFromSupabase(pin: string): Promise<Room | null> {
       .eq('pin', pin)
       .single();
 
-    console.log('[fetchRoomFromSupabase] Supabase response:', { roomData, roomError });
-
-    if (roomError || !roomData) {
-      console.log('[fetchRoomFromSupabase] No room found in Supabase');
-      return null;
-    }
+    if (roomError || !roomData) return null;
 
     // Fetch students for this room
     const { data: studentsData } = await supabase
@@ -279,22 +300,16 @@ export function getRoomById(roomId: string): Room | null {
 export async function getRoomByPin(pin: string): Promise<Room | null> {
   // First check localStorage
   const localRoom = getRoomByPinFromLocal(pin);
-  if (localRoom) {
-    console.log('[getRoomByPin] Found room in localStorage:', localRoom.pin);
-    return localRoom;
-  }
+  if (localRoom) return localRoom;
 
   // If not found locally, try Supabase (for cross-device access)
-  console.log('[getRoomByPin] Room not in localStorage, checking Supabase for PIN:', pin);
   const remoteRoom = await fetchRoomFromSupabase(pin);
   if (remoteRoom) {
-    console.log('[getRoomByPin] Found room in Supabase:', remoteRoom.pin);
     // Save to localStorage for future access
     saveRoomToLocal(remoteRoom);
     return remoteRoom;
   }
 
-  console.log('[getRoomByPin] Room not found anywhere for PIN:', pin);
   return null;
 }
 
