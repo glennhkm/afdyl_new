@@ -301,7 +301,7 @@ export async function trackPlayer(
 }
 
 /**
- * Draw clean tracking overlay
+ * Draw tracking overlay - disabled for cleaner look
  */
 export function drawTrackingOverlay(
   ctx: CanvasRenderingContext2D,
@@ -309,103 +309,8 @@ export function drawTrackingOverlay(
   canvasWidth: number,
   canvasHeight: number
 ): void {
-  if (!result.boundingBox) return;
-  
-  const { x, y, width, height } = result.boundingBox;
-  
-  // Color based on confidence
-  const color = result.confidence > 0.7 ? '#22C55E' : '#EDDD6E';
-  
-  ctx.save();
-  
-  // Draw rounded bounding box
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
-  
-  const r = 8;
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + width - r, y);
-  ctx.arcTo(x + width, y, x + width, y + r, r);
-  ctx.lineTo(x + width, y + height - r);
-  ctx.arcTo(x + width, y + height, x + width - r, y + height, r);
-  ctx.lineTo(x + r, y + height);
-  ctx.arcTo(x, y + height, x, y + height - r, r);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
-  ctx.closePath();
-  ctx.stroke();
-  
-  // Corner accents
-  ctx.lineWidth = 4;
-  const corner = 20;
-  
-  ctx.beginPath();
-  ctx.moveTo(x, y + corner);
-  ctx.lineTo(x, y);
-  ctx.lineTo(x + corner, y);
-  ctx.stroke();
-  
-  ctx.beginPath();
-  ctx.moveTo(x + width - corner, y);
-  ctx.lineTo(x + width, y);
-  ctx.lineTo(x + width, y + corner);
-  ctx.stroke();
-  
-  ctx.beginPath();
-  ctx.moveTo(x, y + height - corner);
-  ctx.lineTo(x, y + height);
-  ctx.lineTo(x + corner, y + height);
-  ctx.stroke();
-  
-  ctx.beginPath();
-  ctx.moveTo(x + width - corner, y + height);
-  ctx.lineTo(x + width, y + height);
-  ctx.lineTo(x + width, y + height - corner);
-  ctx.stroke();
-  
-  // Center point
-  const cx = x + width / 2;
-  const cy = y + height / 2;
-  
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-  ctx.fill();
-  
-  ctx.fillStyle = '#FFF';
-  ctx.beginPath();
-  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Position indicator line
-  const posX = result.x * canvasWidth;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 4]);
-  ctx.beginPath();
-  ctx.moveTo(posX, y + height + 5);
-  ctx.lineTo(posX, canvasHeight - 100);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  
-  // Arrow at bottom
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(posX, canvasHeight - 100);
-  ctx.lineTo(posX - 8, canvasHeight - 115);
-  ctx.lineTo(posX + 8, canvasHeight - 115);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Label
-  const labels = ['← KIRI', '● TENGAH', 'KANAN →'];
-  ctx.fillStyle = color;
-  ctx.font = 'bold 12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(labels[result.lane], posX, canvasHeight - 85);
-  
-  ctx.restore();
+  // Bounding box hidden for cleaner gameplay
+  return;
 }
 
 /**
