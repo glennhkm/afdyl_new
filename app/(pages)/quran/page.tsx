@@ -12,11 +12,13 @@ import {
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 import { QuranPageSkeleton } from "@/components/ui/Skeleton";
+import { useStudentProgress } from "@/contexts/StudentProgressContext";
 
 type TabType = "surah" | "juz";
 
 const QuranPage = () => {
   const router = useRouter();
+  const { quranProgress, hasQuranProgress } = useStudentProgress();
   const [activeTab, setActiveTab] = useState<TabType>("surah");
   const [surahs, setSurahs] = useState<Surah[]>([]);
   const [juzs, setJuzs] = useState<Juz[]>([]);
@@ -138,6 +140,24 @@ const QuranPage = () => {
   return (
     <div className="w-full min-h-[82svh] overflow-x-hidden">
       <Topbar title="Al-Qur'an" />
+
+      {/* Progress Banner */}
+      {hasQuranProgress && (
+        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3 mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon name="RiBookmarkFill" className="w-5 h-5 text-emerald-600" />
+            <span className="text-emerald-700 font-medium text-sm sm:text-base">
+              Terakhir: {quranProgress.lastSurahName} Ayat {quranProgress.lastAyah}
+            </span>
+          </div>
+          <button
+            onClick={() => router.push(`/quran/read?type=surah&number=${quranProgress.lastSurah}&name=${encodeURIComponent(quranProgress.lastSurahName)}`)}
+            className="text-xs sm:text-sm text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full hover:bg-emerald-200 transition-colors"
+          >
+            Lanjutkan
+          </button>
+        </div>
+      )}
 
       {/* Tab Selector */}
       <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6">

@@ -14,6 +14,7 @@ import {
   IqraPage,
 } from "@/lib/services/iqra-service";
 import { IqraReadSkeleton } from "@/components/ui/Skeleton";
+import { useStudentProgress } from "@/contexts/StudentProgressContext";
 
 // Loading component
 const LoadingSpinner = () => <IqraReadSkeleton />;
@@ -151,6 +152,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 const IqraReadingContent = () => {
   const searchParams = useSearchParams();
   const volumeNumber = parseInt(searchParams.get("volume") || "1");
+  const { iqraProgress, markIqraProgress } = useStudentProgress();
 
   // State
   const [currentPage, setCurrentPage] = useState(1);
@@ -163,6 +165,8 @@ const IqraReadingContent = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showMarkConfirm, setShowMarkConfirm] = useState(false);
+  const [markedSuccess, setMarkedSuccess] = useState(false);
 
   // Load volume data
   useEffect(() => {
@@ -171,7 +175,11 @@ const IqraReadingContent = () => {
       setVolumeTitle(volume.title);
       setTotalPages(getVolumeTotalPages(volumeNumber));
     }
-  }, [volumeNumber]);
+    // Set initial page from progress if this is the last read volume
+    if (iqraProgress.currentJilid === volumeNumber && iqraProgress.currentPage > 1) {
+      setCurrentPage(iqraProgress.currentPage);
+    }
+  }, [volumeNumber, iqraProgress.currentJilid, iqraProgress.currentPage]);
 
   // Load page data
   useEffect(() => {
@@ -234,6 +242,18 @@ const IqraReadingContent = () => {
     setHighlightsOn((prev) => !prev);
   }, []);
 
+  // Mark progress handler
+  const handleMarkProgress = useCallback(() => {
+    markIqraProgress(volumeNumber, currentPage);
+    setShowMarkConfirm(false);
+    setMarkedSuccess(true);
+    setTimeout(() => setMarkedSuccess(false), 3000);
+  }, [volumeNumber, currentPage, markIqraProgress]);
+
+  // Check if current page is the marked page
+  const isMarkedPage = iqraProgress.currentJilid === volumeNumber && 
+                       iqraProgress.currentPage === currentPage;
+
   // Settings button for topbar
   const settingsButton = (
     <button
@@ -249,8 +269,24 @@ const IqraReadingContent = () => {
   }
 
   return (
-    <div className="w-full min-h-[82svh]">
+    <div className="w-full min-h-[82svh] pb-24">
       <Topbar title={volumeTitle} actionButton={settingsButton} />
+
+      {/* Marked Page Indicator */}
+      {isMarkedPage && (
+        <div className="bg-emerald-100 border border-emerald-300 rounded-xl p-3 mb-4 flex items-center gap-2">
+          <Icon name="RiBookmarkFill" className="w-5 h-5 text-emerald-600" />
+          <span className="text-emerald-700 text-sm">Halaman ini ditandai sebagai progress terakhir</span>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {markedSuccess && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-6 py-3 rounded-full shadow-lg z-50 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <Icon name="RiCheckLine" className="w-5 h-5" />
+          <span>Progress berhasil ditandai!</span>
+        </div>
+      )}
 
       {/* Highlights Toggle */}
       <div className="flex items-center gap-3 mb-6">
@@ -364,22 +400,72 @@ const IqraReadingContent = () => {
 
       {/* Page Progress */}
       <div className="flex justify-center mt-4">
-        <div className="flex gap-2">
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`
-                w-2.5 h-2.5 rounded-full transition-all duration-200
-                ${currentPage === i + 1 
-                  ? 'bg-brown-brand w-6' 
-                  : 'bg-gray-300 hover:bg-gray-400'
-                }
-              `}
-            />
-          ))}
+        <div className="flex gap-2 flex-wrap justify-center">
+          {Array.from({ length: totalPages }, (_, i) => {
+            const isCurrentPageMarked = iqraProgress.currentJilid === volumeNumber && 
+                                        iqraProgress.currentPage === i + 1;
+            return (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`
+                  w-2.5 h-2.5 rounded-full transition-all duration-200
+                  ${currentPage === i + 1 
+                    ? 'bg-brown-brand w-6' 
+                    : isCurrentPageMarked
+                    ? 'bg-emerald-500'
+                    : 'bg-gray-300 hover:bg-gray-400'
+                  }
+                `}
+              />
+            );
+          })}
         </div>
       </div>
+
+      {/* Floating Mark Button */}
+      <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2">
+        <button
+          onClick={() => setShowMarkConfirm(true)}
+          className="px-6 py-3 rounded-full bg-emerald-500 text-white font-semibold shadow-xl hover:bg-emerald-600 transition-colors flex items-center gap-2"
+        >
+          <Icon name="RiBookmarkLine" className="w-5 h-5" />
+          Tandai Halaman {currentPage}
+        </button>
+      </div>
+
+      {/* Mark Progress Confirmation Modal */}
+      {showMarkConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-100 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icon name="RiBookmarkLine" className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Tandai Progress?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Tandai posisi bacaan saat ini di Jilid {volumeNumber} Halaman {currentPage}?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowMarkConfirm(false)}
+                  className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleMarkProgress}
+                  className="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600 transition-colors"
+                >
+                  Tandai
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Letter Modal */}
       <LetterModal

@@ -3,6 +3,7 @@ import { Comic_Neue, Amiri } from "next/font/google";
 import "./globals.css";
 import PWAProvider from "@/components/pwa/PWAProvider";
 import { TeacherProvider } from "@/contexts/TeacherContext";
+import { StudentProgressProvider } from "@/contexts/StudentProgressContext";
 
 const comicSans = Comic_Neue({
   subsets: ["latin"],
@@ -90,9 +91,11 @@ export default function RootLayout({
         className={`antialiased ${comicSans.variable} ${amiri.variable} font-sans overflow-x-hidden`}
       >
         <TeacherProvider>
-          <PWAProvider>
-            {children}
-          </PWAProvider>
+          <StudentProgressProvider>
+            <PWAProvider>
+              {children}
+            </PWAProvider>
+          </StudentProgressProvider>
         </TeacherProvider>
       </body>
     </html>

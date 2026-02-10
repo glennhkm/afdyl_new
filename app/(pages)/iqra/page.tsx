@@ -3,14 +3,22 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/topbar";
+import Icon from "@/components/Icon";
 import { getAllVolumes, IqraVolumeInfo } from "@/lib/services/iqra-service";
+import { useStudentProgress } from "@/contexts/StudentProgressContext";
 
 const IqraPage = () => {
   const router = useRouter();
   const volumes = getAllVolumes();
+  const { iqraProgress, hasIqraProgress } = useStudentProgress();
 
   const handleVolumeClick = (volume: IqraVolumeInfo) => {
     router.push(`/iqra/read?volume=${volume.volumeNumber}`);
+  };
+
+  // Check if this is the last read volume
+  const isLastReadVolume = (volumeNumber: number) => {
+    return hasIqraProgress && iqraProgress.currentJilid === volumeNumber;
   };
 
   // Colors for each volume
@@ -27,6 +35,24 @@ const IqraPage = () => {
     <div className="w-full min-h-[82svh] overflow-x-hidden">
       <Topbar title="Iqra'" />
 
+      {/* Progress Banner */}
+      {hasIqraProgress && (
+        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3 mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon name="RiBookmarkFill" className="w-5 h-5 text-emerald-600" />
+            <span className="text-emerald-700 font-medium text-sm sm:text-base">
+              Terakhir: Jilid {iqraProgress.currentJilid} Hal. {iqraProgress.currentPage}
+            </span>
+          </div>
+          <button
+            onClick={() => router.push(`/iqra/read?volume=${iqraProgress.currentJilid}`)}
+            className="text-xs sm:text-sm text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full hover:bg-emerald-200 transition-colors"
+          >
+            Lanjutkan
+          </button>
+        </div>
+      )}
+
       {/* Header Description */}
       <div className="mb-8 text-center">
         <p className="text-gray-600 text-lg">
@@ -38,6 +64,7 @@ const IqraPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {volumes.map((volume) => {
           const colors = volumeColors[volume.volumeNumber] || volumeColors[1];
+          const isLastRead = isLastReadVolume(volume.volumeNumber);
           
           return (
             <button
@@ -45,15 +72,23 @@ const IqraPage = () => {
               onClick={() => handleVolumeClick(volume)}
               className={`
                 relative overflow-hidden rounded-2xl p-6 
-                ${colors.bg} border-2 ${colors.border}
+                ${colors.bg} border-2 ${isLastRead ? 'border-emerald-400 ring-2 ring-emerald-200' : colors.border}
                 hover:shadow-lg hover:-translate-y-1 
                 transition-all duration-200 
                 text-left group
               `}
             >
+              {/* Last Read Badge */}
+              {isLastRead && (
+                <div className="absolute top-4 left-4 text-xs text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full flex items-center gap-1">
+                  <Icon name="RiBookmarkFill" className="w-3 h-3" />
+                  Terakhir Hal. {iqraProgress.currentPage}
+                </div>
+              )}
+
               {/* Volume Number Badge */}
               <div className={`
-                absolute top-4 right-4 w-12 h-12 
+                absolute ${isLastRead ? 'top-12' : 'top-4'} right-4 w-12 h-12 
                 rounded-full flex items-center justify-center
                 bg-white shadow-md
                 ${colors.text} font-bold text-xl

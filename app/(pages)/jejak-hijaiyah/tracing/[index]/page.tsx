@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Topbar from "@/components/topbar";
 import TracingCanvas, { TracingCanvasRef } from "@/components/hijaiyah/TracingCanvas";
 import Icon from "@/components/Icon";
 import { hijaiyahLetters, audioMapping } from "@/lib/data/hijaiyah-letters";
+import { useStudentProgress } from "@/contexts/StudentProgressContext";
 
 interface FeedbackState {
   type: "success" | "error" | "warning" | null;
@@ -15,18 +16,25 @@ interface FeedbackState {
 const HijaiyahTracingDetailPage = () => {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { hijaiyahProgress, markHijaiyahCompleted } = useStudentProgress();
   
   const index = parseInt(params.index as string) || 0;
   const letterData = hijaiyahLetters[index] || hijaiyahLetters[0];
   const letter = searchParams.get("letter") || letterData.arabic;
   const pronunciation = searchParams.get("pronunciation") || letterData.latin;
 
+  // Check if letter is already completed
+  const completedLetters = hijaiyahProgress.completedLetters || [];
+  const isAlreadyCompleted = completedLetters.includes(index);
+
   const canvasRef = useRef<TracingCanvasRef>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(isAlreadyCompleted);
   const [feedback, setFeedback] = useState<FeedbackState>({ type: null, message: "" });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Handle reset
   const handleReset = useCallback(() => {
@@ -94,17 +102,90 @@ const HijaiyahTracingDetailPage = () => {
         showFeedback("success", `Luar Biasa! 🎉 Huruf ${letter} selesai!`);
         // Play success sound
         handlePlaySound();
+        // Mark as completed in progress
+        if (!isAlreadyCompleted) {
+          markHijaiyahCompleted(index);
+        }
+        // Show success modal
+        setShowSuccessModal(true);
       } else {
         showFeedback("warning", result.message);
       }
     }
   };
 
+  // Handle navigation to next letter
+  const handleNextLetter = (fromModal = false) => {
+    if (index < hijaiyahLetters.length - 1) {
+      const nextLetter = hijaiyahLetters[index + 1];
+      router.push(
+        `/jejak-hijaiyah/tracing/${index + 1}?letter=${encodeURIComponent(nextLetter.arabic)}&pronunciation=${encodeURIComponent(nextLetter.latin)}`
+      );
+    } else if (fromModal) {
+      // All letters completed
+      router.push('/jejak-hijaiyah');
+    }
+    setShowSuccessModal(false);
+  };
+
+  // Handle navigation to previous letter
+  const handlePrevLetter = () => {
+    if (index > 0) {
+      const prevLetter = hijaiyahLetters[index - 1];
+      router.push(
+        `/jejak-hijaiyah/tracing/${index - 1}?letter=${encodeURIComponent(prevLetter.arabic)}&pronunciation=${encodeURIComponent(prevLetter.latin)}`
+      );
+    }
+  };
+
   return (
-    <div className="w-full min-h-[82svh] pb-6 sm:pb-8 pt-20 md:pt-44 lg:pt-0 overflow-x-hidden">
+    <div className="w-full min-h-[82svh] pb-6 sm:pb-8 pt-20 md:pt-44 lg:pt-0 overflow-x-hidden px-2">
       <Topbar title="Jejak Hijaiyah" />
 
+      {/* Already Completed Banner */}
+      {isAlreadyCompleted && (
+        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3 mb-4 flex items-center justify-between max-w-3xl mx-auto">
+          <div className="flex items-center gap-2">
+            <Icon name="RiCheckboxCircleFill" className="w-5 h-5 text-emerald-600" />
+            <span className="text-emerald-700 font-medium text-sm sm:text-base">
+              Huruf ini sudah selesai!
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col items-center gap-3 sm:gap-5 max-w-3xl mx-auto">
+        {/* Navigation between letters */}
+        <div className="flex items-center justify-between w-full">
+          <button
+            onClick={handlePrevLetter}
+            disabled={index === 0}
+            className={`p-2 rounded-full transition-all ${
+              index === 0 
+                ? 'bg-gray-100 text-gray-300 cursor-not-allowed' 
+                : 'bg-brown-brand text-white hover:opacity-90'
+            }`}
+          >
+            <Icon name="RiArrowLeftSLine" className="w-6 h-6" />
+          </button>
+          
+          <div className="text-center">
+            <span className="text-gray-500 text-sm">Huruf {index + 1} dari {hijaiyahLetters.length}</span>
+          </div>
+          
+          <button
+            onClick={() => handleNextLetter()}
+            disabled={index === hijaiyahLetters.length - 1}
+            className={`p-2 rounded-full transition-all ${
+              index === hijaiyahLetters.length - 1 
+                ? 'bg-gray-100 text-gray-300 cursor-not-allowed' 
+                : 'bg-brown-brand text-white hover:opacity-90'
+            }`}
+          >
+            <Icon name="RiArrowRightSLine" className="w-6 h-6" />
+          </button>
+        </div>
+
         {/* Action Buttons - Ulang and Bunyikan */}
         <div className="flex gap-3 sm:gap-4 w-full">
           <button
@@ -205,6 +286,50 @@ const HijaiyahTracingDetailPage = () => {
           </div>
         )}
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 z-100 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icon name="RiTrophyFill" className="w-10 h-10 text-emerald-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Hebat! 🎉</h3>
+              <p className="text-gray-600">
+                Kamu berhasil menulis huruf
+              </p>
+              <div className="mt-3 text-6xl font-arabic text-emerald-700">
+                {letter}
+              </div>
+              <p className="text-sm text-gray-500 mt-2">
+                Progress tersimpan otomatis
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Ulangi
+              </button>
+              <button
+                onClick={() => handleNextLetter(true)}
+                className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+              >
+                {index < hijaiyahLetters.length - 1 ? (
+                  <>
+                    Lanjut
+                    <Icon name="RiArrowRightLine" className="w-5 h-5" />
+                  </>
+                ) : (
+                  'Selesai'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

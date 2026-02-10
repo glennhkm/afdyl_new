@@ -19,6 +19,7 @@ import {
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 import { QuranReadSkeleton } from "@/components/ui/Skeleton";
+import { useStudentProgress } from "@/contexts/StudentProgressContext";
 
 // Loading component for Suspense
 const ReadingPageLoading = () => <QuranReadSkeleton />;
@@ -152,6 +153,7 @@ SettingsModal.displayName = 'SettingsModal';
 // Main content component
 const ReadingContent = () => {
   const searchParams = useSearchParams();
+  const { quranProgress, markQuranProgress } = useStudentProgress();
 
   // URL params
   const type = (searchParams.get("type") as "surah" | "juz") || "surah";
@@ -170,6 +172,8 @@ const ReadingContent = () => {
   const [currentActiveWord, setCurrentActiveWord] = useState(0);
   const [autoHighlight, setAutoHighlight] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMarkConfirm, setShowMarkConfirm] = useState(false);
+  const [markedSuccess, setMarkedSuccess] = useState(false);
 
   // Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -216,6 +220,35 @@ const ReadingContent = () => {
       }
     };
   }, [loadAyahs]);
+
+  // Set initial active ayah based on saved progress
+  useEffect(() => {
+    if (quranProgress.lastSurah === number && ayahs.length > 0) {
+      const savedAyahIndex = ayahs.findIndex(a => a.number === quranProgress.lastAyah);
+      if (savedAyahIndex !== -1) {
+        setCurrentActiveAyah(savedAyahIndex);
+        // Scroll to saved position after a short delay
+        setTimeout(() => {
+          ayahRefs.current[savedAyahIndex]?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 500);
+      }
+    }
+  }, [quranProgress.lastSurah, quranProgress.lastAyah, number, ayahs]);
+
+  // Mark current position as progress
+  const handleMarkProgress = useCallback(() => {
+    if (ayahs.length === 0) return;
+    
+    const currentAyah = ayahs[currentActiveAyah];
+    markQuranProgress(number, name, currentAyah.number);
+    
+    setShowMarkConfirm(false);
+    setMarkedSuccess(true);
+    setTimeout(() => setMarkedSuccess(false), 3000);
+  }, [ayahs, currentActiveAyah, number, name, markQuranProgress]);
 
   // Scroll to ayah
   const scrollToAyah = useCallback((index: number) => {
@@ -432,6 +465,7 @@ const ReadingContent = () => {
     (ayah: Ayah, index: number) => {
       const isActiveAyah = index === currentActiveAyah;
       const words = ayah.words || [];
+      const isMarkedAyah = quranProgress.lastAyah === ayah.number && quranProgress.lastSurah === number;
 
       return (
         <div
@@ -440,14 +474,16 @@ const ReadingContent = () => {
             ayahRefs.current[index] = el;
           }}
           onClick={() => handleAyahClick(index)}
-          className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-3 sm:mb-4 transition-all duration-300 cursor-pointer ring-1 ring-black/10 ${
+          className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-3 sm:mb-4 transition-all duration-300 cursor-pointer ring-1 ${
             isActiveAyah
-              ? "bg-foreground-2 shadow-lg opacity-100"
-              : "opacity-40 hover:opacity-80"
+              ? "bg-foreground-2 shadow-lg opacity-100 ring-black/10"
+              : isMarkedAyah
+              ? "bg-emerald-50 opacity-80 ring-emerald-300 ring-2"
+              : "opacity-40 hover:opacity-80 ring-black/10"
           }`}
         >
-          {/* Play Button */}
-          <div className="flex items-center mb-3 sm:mb-4">
+          {/* Top Bar with Play Button and Mark Indicator */}
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -464,6 +500,13 @@ const ReadingContent = () => {
                 className="w-4 h-4 sm:w-5 sm:h-5 text-black"
               />
             </button>
+            
+            {isMarkedAyah && (
+              <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs">
+                <Icon name="RiBookmarkFill" className="w-3 h-3" />
+                <span>Terakhir dibaca</span>
+              </div>
+            )}
           </div>
 
           {/* Arabic Text */}
@@ -532,6 +575,9 @@ const ReadingContent = () => {
       renderAyahNumber,
       fontSize,
       wordSpacing,
+      quranProgress.lastAyah,
+      quranProgress.lastSurah,
+      number,
     ]
   );
 
@@ -635,6 +681,54 @@ const ReadingContent = () => {
             />
             {autoHighlight ? "Stop" : "Putar"}
           </button>
+          <button
+            onClick={() => setShowMarkConfirm(true)}
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition bg-emerald-500 text-white flex items-center gap-1.5 sm:gap-2"
+          >
+            <Icon name="RiBookmarkLine" className="w-3 h-3 sm:w-4 sm:h-4" />
+            Tandai
+          </button>
+        </div>
+      )}
+
+      {/* Mark Progress Confirmation Modal */}
+      {showMarkConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-100 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icon name="RiBookmarkLine" className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Tandai Progress?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Tandai posisi bacaan saat ini di Ayat {ayahs[currentActiveAyah]?.number || 1}?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowMarkConfirm(false)}
+                  className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleMarkProgress}
+                  className="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600 transition-colors"
+                >
+                  Tandai
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast */}
+      {markedSuccess && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-6 py-3 rounded-full shadow-lg z-50 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <Icon name="RiCheckLine" className="w-5 h-5" />
+          <span>Progress berhasil ditandai!</span>
         </div>
       )}
 
