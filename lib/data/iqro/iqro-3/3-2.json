@@ -1,0 +1,48 @@
+{
+  "level_id": 3,
+  "level_title": "IQRO' 3",
+  "topic": {
+    "latin": "MAD (Long) vs Non-MAD (Short) Vowels",
+    "arab": "الْمَدُّ وَغَيْرُ الْمَدِّ"
+  },
+  "instruction_id": "Ingat, jangan keliru. Mana bacaan MAD (yang panjang) dan mana yang bukan MAD (yang pendek).",
+  "instruction_en": "Remember, don't be mistaken. Which is MAD reading (long) and which is non-MAD (short).",
+  "instruction_ar": "تَذَكَّرْ، لَا تَخْطِئْ. أَيُّهَا الْمَدُّ (الطَّوِيلُ) وَأَيُّهَا غَيْرُ الْمَدِّ (الْقَصِيرُ).",
+  "content": [
+    {
+      "order_id": 1,
+      "latin": "FA'ALA FAA'ILI HASADA HAASIDI",
+      "arabic": "فَعَلَ    فَاعِلِ    حَسَدَ    حَاسِدِ"
+    },
+    {
+      "order_id": 2,
+      "latin": "KATABA KAATIBI JALASA JAALISI",
+      "arabic": "كَتَبَ    كَاتِبِ    جَلَسَ    جَالِسِ"
+    },
+    {
+      "order_id": 3,
+      "latin": "KHATHABA KHAATHIBI QARA-A QAARI-I",
+      "arabic": "خَطَبَ    خَاطِبِ    قَرَأَ    قَارِئِ"
+    },
+    {
+      "order_id": 4,
+      "latin": "BAAYINA BAAYINI MAALIKA MAALIKI",
+      "arabic": "بَايِنَ    بَايِنِ    مَالِكَ    مَالِكِ"
+    },
+    {
+      "order_id": 5,
+      "latin": "'AALAMA 'AALIMI SYAAHADA SYAAHIDI",
+      "arabic": "عَالَمَ    عَالِمِ    شَاهَدَ    شَاهِدِ"
+    },
+    {
+      "order_id": 6,
+      "latin": "SHIRAATHA JIHAADI THIBAAQI BILAADI",
+      "arabic": "صِرَاطَ    جِهَادِ    طِبَاقِ    بِلَادِ"
+    },
+    {
+      "order_id": 7,
+      "latin": "LIBAASA 'IMAADI FAA'ILI GHAFFAARA",
+      "arabic": "لِبَاسَ    عِمَادِ    فَاعِلِ    غَفَّارَ"
+    }
+  ]
+}

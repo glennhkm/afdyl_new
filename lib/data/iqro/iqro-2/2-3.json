@@ -1,0 +1,53 @@
+{
+  "level_id": 2,
+  "level_title": "IQRO' 2",
+  "topic": {
+    "latin": "Letter Ya (ي) with Fathah",
+    "arab": "حَرْفُ الْيَاءِ بِالْفَتْحَةِ"
+  },
+  "instruction_id": "Berlatih membaca huruf Ya dengan fathah dan menghubungkannya dengan huruf lain.",
+  "instruction_en": "Practice reading the letter Ya with fathah and connecting it with other letters.",
+  "instruction_ar": "تَدَرَّبْ عَلَى قِرَاءَةِ حَرْفِ الْيَاءِ بِالْفَتْحَةِ وَوَصْلِهِ بِالْحُرُوفِ الأُخْرَى.",
+  "content": [
+    {
+      "order_id": 1,
+      "latin": "YA = YA.... YATA = YATA",
+      "arabic": "يَ = يَـ....    يَتَ = يَتَ"
+    },
+    {
+      "order_id": 2,
+      "latin": "RABBI YABARA RANNI YANARA",
+      "arabic": "رَبِّي    يَبَرَ . رَنِّي    يَنَرَ"
+    },
+    {
+      "order_id": 3,
+      "latin": "BAYYINA NABIYY YADANA DANIYY",
+      "arabic": "بَيِّنَ    نَبِيّ . يَدَنَ    دَنِيّ"
+    },
+    {
+      "order_id": 4,
+      "latin": "DZAHABA NAZALA NADZARA YADAYI",
+      "arabic": "ذَهَبَ    نَزَلَ . نَذَرَ    يَدَيِ"
+    },
+    {
+      "order_id": 5,
+      "latin": "AZAGHA BATARA ZAYYINA ZANIYY",
+      "arabic": "اَزَغَ    بَتَرَ . زَيِّنَ    زَنِيّ"
+    },
+    {
+      "order_id": 6,
+      "latin": "ATSATSA TSANA-A YAABA AYATA",
+      "arabic": "اَثَثَ    ثَنَأَ . يَابَ    اَيَتَ"
+    },
+    {
+      "order_id": 7,
+      "latin": "RAZAQA NAZHARA ATIYY WANADA",
+      "arabic": "رَزَقَ    نَظَرَ . اَتِيّ    وَنَدَ"
+    },
+    {
+      "order_id": 8,
+      "latin": "YAYI NAMARA SAYI YANA",
+      "arabic": "يَـيِي    نَـمَرَ    سَـيِ    يَـنَ"
+    }
+  ]
+}

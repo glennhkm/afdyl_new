@@ -8,10 +8,10 @@ import {
   getVolumeDetails,
   getPageFromVolume,
   getVolumeTotalPages,
-  playLetterAudio,
+  playRowAudio,
   stopAudio,
-  IqraLetter,
   IqraPage,
+  IqraRow,
 } from "@/lib/services/iqra-service";
 import { IqraReadSkeleton } from "@/components/ui/Skeleton";
 import { useStudentProgress } from "@/contexts/StudentProgressContext";
@@ -19,23 +19,23 @@ import { useStudentProgress } from "@/contexts/StudentProgressContext";
 // Loading component
 const LoadingSpinner = () => <IqraReadSkeleton />;
 
-// Letter Modal Component
-interface LetterModalProps {
-  letter: IqraLetter | null;
+// Order Modal Component - displays entire order (satuan bacaan)
+interface OrderModalProps {
+  row: IqraRow | null;
   isOpen: boolean;
   onClose: () => void;
   isPlaying: boolean;
   onPlayAudio: () => void;
 }
 
-const LetterModal: React.FC<LetterModalProps> = ({
-  letter,
+const OrderModal: React.FC<OrderModalProps> = ({
+  row,
   isOpen,
   onClose,
   isPlaying,
   onPlayAudio,
 }) => {
-  if (!isOpen || !letter) return null;
+  if (!isOpen || !row) return null;
 
   return (
     <div
@@ -43,9 +43,14 @@ const LetterModal: React.FC<LetterModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl transform transition-all"
+        className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl transform transition-all relative"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Order Number Badge */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-brown-brand/10 text-brown-brand px-4 py-1 rounded-full text-sm font-semibold">
+          Bacaan {row.order_id}
+        </div>
+
         {/* Audio Button */}
         <button
           onClick={onPlayAudio}
@@ -72,25 +77,160 @@ const LetterModal: React.FC<LetterModalProps> = ({
           <Icon name="RiCloseLine" className="w-6 h-6" />
         </button>
 
-        {/* Arabic Letter */}
-        <div className="text-center mt-8 mb-6">
-          <div className="text-8xl font-arabic text-black leading-none">
-            {letter.arabic}
+        {/* Arabic Letters - displayed RTL */}
+        <div className="text-center mt-12 mb-6" dir="rtl">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            {row.letters.map((letter, idx) => (
+              <span 
+                key={idx} 
+                className="text-5xl sm:text-6xl lg:text-7xl font-arabic text-black leading-relaxed"
+              >
+                {letter.arabic}
+              </span>
+            ))}
           </div>
           
           {/* Decorative Diamond */}
-          <div className="flex justify-center mt-4">
-            <div className="w-3 h-3 bg-black transform rotate-45" />
+          <div className="flex justify-center mt-6">
+            <div className="w-3 h-3 bg-brown-brand transform rotate-45" />
           </div>
         </div>
 
-        {/* Transliteration */}
-        <div className="text-center">
-          <span className="text-2xl font-semibold text-gray-800">
-            ({letter.transliteration})
-          </span>
+        {/* Transliterations */}
+        <div className="text-center space-y-2">
+          <div className="flex flex-wrap items-center justify-center gap-2" dir="rtl">
+            {row.letters.map((letter, idx) => (
+              <span 
+                key={idx}
+                className="text-lg sm:text-xl font-medium text-gray-700 bg-gray-50 px-3 py-1 rounded-lg"
+              >
+                {letter.latin}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Single Cell Component - displays one order item in the grid (clickable as a whole)
+interface IqraCellProps {
+  row: IqraRow;
+  isFirstRow: boolean;
+  highlightsOn: boolean;
+  onOrderClick: (row: IqraRow) => void;
+  onRowAudioClick: (row: IqraRow) => void;
+  isRowPlaying: boolean;
+}
+
+const IqraCell: React.FC<IqraCellProps> = ({
+  row,
+  isFirstRow,
+  highlightsOn,
+  onOrderClick,
+  onRowAudioClick,
+  isRowPlaying,
+}) => {
+  return (
+    <div 
+      className={`
+        flex flex-col items-center py-2 sm:py-3 px-1 sm:px-2
+        ${isFirstRow && highlightsOn ? 'bg-amber-50/50 rounded-lg' : ''}
+      `}
+    >
+      {/* Order number */}
+      <div className="text-xs text-gray-400 font-medium mb-1">
+        {row.order_id}
+      </div>
+
+      {/* Clickable Order Area - entire order is one button */}
+      <button
+        onClick={() => onOrderClick(row)}
+        className={`
+          flex flex-wrap items-center justify-center gap-1
+          py-1 px-2 rounded-lg transition-all duration-200
+          hover:bg-white/60 hover:scale-[1.02] active:scale-[0.98]
+          cursor-pointer
+          ${isFirstRow && highlightsOn ? 'text-brown-brand' : 'text-gray-800'}
+        `}
+        dir="rtl"
+      >
+        {row.letters.map((letter, letterIndex) => (
+          <span
+            key={`${row.order_id}-${letterIndex}`}
+            className="text-2xl sm:text-3xl lg:text-4xl font-arabic leading-relaxed"
+          >
+            {letter.arabic}
+          </span>
+        ))}
+      </button>
+
+      {/* Audio button for row */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRowAudioClick(row);
+        }}
+        className={`
+          mt-1 p-1 sm:p-1.5 rounded-full transition-all duration-200
+          ${isRowPlaying 
+            ? 'bg-brown-brand text-white' 
+            : 'bg-gray-100/80 text-gray-400 hover:bg-gray-200'
+          }
+        `}
+      >
+        <Icon 
+          name={isRowPlaying ? "RiVolumeUpFill" : "RiVolumeUpLine"} 
+          className="w-3 h-3 sm:w-4 sm:h-4" 
+        />
+      </button>
+    </div>
+  );
+};
+
+// Grid Row Component - displays 3 orders per row (RTL order: smallest on right)
+interface IqraGridRowProps {
+  rows: IqraRow[];  // Array of 3 (or fewer) rows
+  rowGroupIndex: number;
+  highlightsOn: boolean;
+  onOrderClick: (row: IqraRow) => void;
+  onRowAudioClick: (row: IqraRow) => void;
+  playingRowId: number | null;
+}
+
+const IqraGridRow: React.FC<IqraGridRowProps> = ({
+  rows,
+  rowGroupIndex,
+  highlightsOn,
+  onOrderClick,
+  onRowAudioClick,
+  playingRowId,
+}) => {
+  return (
+    <div 
+      className={`
+        grid grid-cols-3 gap-1 sm:gap-2
+        ${rowGroupIndex > 0 ? 'border-t border-[#B8B888] pt-2' : ''}
+      `}
+      dir="rtl"
+    >
+      {/* With dir="rtl", first item appears on right - so order 1 will be on right */}
+      {rows.map((row) => (
+        <IqraCell
+          key={row.order_id}
+          row={row}
+          isFirstRow={row.order_id === 1}
+          highlightsOn={highlightsOn}
+          onOrderClick={onOrderClick}
+          onRowAudioClick={onRowAudioClick}
+          isRowPlaying={playingRowId === row.order_id}
+        />
+      ))}
+      {/* Fill empty cells if less than 3 items */}
+      {rows.length < 3 && Array.from({ length: 3 - rows.length }).map((_, i) => (
+        <div key={`empty-${i}`} className="py-2 sm:py-3" />
+      ))}
     </div>
   );
 };
@@ -160,9 +300,10 @@ const IqraReadingContent = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [volumeTitle, setVolumeTitle] = useState("");
   const [highlightsOn, setHighlightsOn] = useState(true);
-  const [selectedLetter, setSelectedLetter] = useState<IqraLetter | null>(null);
+  const [selectedRow, setSelectedRow] = useState<IqraRow | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playingRowId, setPlayingRowId] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showMarkConfirm, setShowMarkConfirm] = useState(false);
@@ -191,15 +332,15 @@ const IqraReadingContent = () => {
     setIsLoading(false);
   }, [volumeNumber, currentPage]);
 
-  // Handle letter click
-  const handleLetterClick = useCallback((letter: IqraLetter) => {
-    setSelectedLetter(letter);
+  // Handle order click - opens modal with full order
+  const handleOrderClick = useCallback((row: IqraRow) => {
+    setSelectedRow(row);
     setIsModalOpen(true);
   }, []);
 
-  // Handle play audio
+  // Handle play order audio from modal
   const handlePlayAudio = useCallback(async () => {
-    if (!selectedLetter) return;
+    if (!selectedRow) return;
 
     if (isPlaying) {
       stopAudio();
@@ -207,33 +348,52 @@ const IqraReadingContent = () => {
     } else {
       setIsPlaying(true);
       try {
-        await playLetterAudio(selectedLetter);
+        await playRowAudio(selectedRow);
       } catch (error) {
         console.error("Error playing audio:", error);
       } finally {
         setIsPlaying(false);
       }
     }
-  }, [selectedLetter, isPlaying]);
+  }, [selectedRow, isPlaying]);
+
+  // Handle play row audio
+  const handleRowAudioClick = useCallback(async (row: IqraRow) => {
+    if (playingRowId === row.order_id) {
+      stopAudio();
+      setPlayingRowId(null);
+    } else {
+      setPlayingRowId(row.order_id);
+      try {
+        await playRowAudio(row);
+      } catch (error) {
+        console.error("Error playing row audio:", error);
+      } finally {
+        setPlayingRowId(null);
+      }
+    }
+  }, [playingRowId]);
 
   // Handle modal close
   const handleCloseModal = useCallback(() => {
     stopAudio();
     setIsPlaying(false);
     setIsModalOpen(false);
-    setSelectedLetter(null);
+    setSelectedRow(null);
   }, []);
 
   // Handle page navigation
   const goToNextPage = useCallback(() => {
     if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentPage, totalPages]);
 
   const goToPreviousPage = useCallback(() => {
     if (currentPage > 1) {
       setCurrentPage((prev) => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentPage]);
 
@@ -272,6 +432,28 @@ const IqraReadingContent = () => {
     <div className="w-full min-h-[82svh] pb-24">
       <Topbar title={volumeTitle} actionButton={settingsButton} />
 
+      {/* Page Topic Header */}
+      {pageData?.topic && (
+        <div className="bg-linear-to-r from-brown-brand/10 to-tertiary-orange/10 rounded-2xl p-4 mb-4 border border-brown-brand/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs sm:text-sm text-gray-500 mb-1">Topik Halaman {currentPage}</p>
+              <p className="text-lg sm:text-xl font-bold text-brown-brand">{pageData.topic.latin}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl sm:text-3xl font-arabic text-tertiary-orange">
+                {pageData.topic.arab}
+              </p>
+            </div>
+          </div>
+          {pageData.instruction && (
+            <p className="text-xs sm:text-sm text-gray-600 mt-2 pt-2 border-t border-brown-brand/10">
+              💡 {pageData.instruction}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Marked Page Indicator */}
       {isMarkedPage && (
         <div className="bg-emerald-100 border border-emerald-300 rounded-xl p-3 mb-4 flex items-center gap-2">
@@ -289,74 +471,48 @@ const IqraReadingContent = () => {
       )}
 
       {/* Highlights Toggle */}
-      <div className="flex items-center gap-3 mb-6">
-        <span className="text-gray-800 font-semibold">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-gray-800 font-semibold text-sm sm:text-base">
           Highlights {highlightsOn ? "On" : "Off"}
         </span>
         <button
           onClick={toggleHighlights}
           className={`
-            relative w-14 h-8 rounded-full transition-colors duration-200
+            relative w-12 h-7 sm:w-14 sm:h-8 rounded-full transition-colors duration-200
             ${highlightsOn ? 'bg-brown-brand' : 'bg-gray-300'}
           `}
         >
           <div
             className={`
-              absolute top-1 w-6 h-6 bg-white rounded-full shadow-md
+              absolute top-0.5 sm:top-1 w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full shadow-md
               transition-transform duration-200
-              ${highlightsOn ? 'translate-x-7' : 'translate-x-1'}
+              ${highlightsOn ? 'translate-x-6 sm:translate-x-7' : 'translate-x-1'}
             `}
           />
         </button>
       </div>
 
-      {/* Letters Grid */}
-      {pageData && (
-        <div className="bg-[#D4D4AA] rounded-3xl p-4 lg:p-6 shadow-lg">
-          {/* Grid Container - 6 columns x 5 rows */}
-          <div className="grid grid-cols-6 gap-2 lg:gap-4">
-            {pageData.letters.map((letter, index) => {
-              const isFirstRow = index < 6;
-              const isHighlighted = highlightsOn && pageData.highlightIndices?.includes(index);
-              const rowIndex = Math.floor(index / 6);
-              
+      {/* Iqra Content - 3 columns per row, RTL order (smallest on right) */}
+      {pageData && pageData.rows && (
+        <div className="bg-[#F5F5DC] rounded-3xl p-3 sm:p-4 lg:p-6 shadow-lg border border-[#D4D4AA]">
+          <div className="space-y-2">
+            {/* Group rows into chunks of 3 */}
+            {Array.from({ length: Math.ceil(pageData.rows.length / 3) }).map((_, groupIndex) => {
+              const startIdx = groupIndex * 3;
+              const rowGroup = pageData.rows.slice(startIdx, startIdx + 3);
               return (
-                <React.Fragment key={index}>
-                  {/* Add row separator after each row except the last */}
-                  {index > 0 && index % 6 === 0 && rowIndex > 0 && (
-                    <div className="col-span-6 border-t border-[#B8B888] my-1" />
-                  )}
-                  
-                  <button
-                    onClick={() => handleLetterClick(letter)}
-                    className={`
-                      aspect-square flex items-center justify-center
-                      rounded-xl transition-all duration-200
-                      hover:bg-white/30 hover:scale-105 active:scale-95
-                      ${isFirstRow ? 'border-b-2 border-[#B8B888]' : ''}
-                    `}
-                  >
-                    <span
-                      className={`
-                        text-3xl lg:text-5xl font-arabic leading-none
-                        transition-colors duration-200
-                        ${isHighlighted ? 'text-brown-brand' : 'text-gray-700'}
-                      `}
-                    >
-                      {letter.arabic}
-                    </span>
-                  </button>
-                </React.Fragment>
+                <IqraGridRow
+                  key={groupIndex}
+                  rows={rowGroup}
+                  rowGroupIndex={groupIndex}
+                  highlightsOn={highlightsOn}
+                  onOrderClick={handleOrderClick}
+                  onRowAudioClick={handleRowAudioClick}
+                  playingRowId={playingRowId}
+                />
               );
             })}
           </div>
-
-          {/* Divider lines between rows */}
-          <style jsx>{`
-            .grid > button:nth-child(n+7):nth-child(-n+12) {
-              border-top: 1px solid #B8B888;
-            }
-          `}</style>
         </div>
       )}
 
@@ -379,7 +535,7 @@ const IqraReadingContent = () => {
 
         {/* Page Indicator */}
         <div className="text-gray-700 font-semibold text-lg">
-          Halaman {currentPage}
+          Halaman {currentPage} / {totalPages}
         </div>
 
         {/* Next Button */}
@@ -398,19 +554,23 @@ const IqraReadingContent = () => {
         </button>
       </div>
 
-      {/* Page Progress */}
+      {/* Page Progress Dots */}
       <div className="flex justify-center mt-4">
-        <div className="flex gap-2 flex-wrap justify-center">
-          {Array.from({ length: totalPages }, (_, i) => {
+        <div className="flex gap-1.5 flex-wrap justify-center max-w-xs">
+          {Array.from({ length: Math.min(totalPages, 15) }, (_, i) => {
+            const pageNum = i + 1;
             const isCurrentPageMarked = iqraProgress.currentJilid === volumeNumber && 
-                                        iqraProgress.currentPage === i + 1;
+                                        iqraProgress.currentPage === pageNum;
             return (
               <button
                 key={i}
-                onClick={() => setCurrentPage(i + 1)}
+                onClick={() => {
+                  setCurrentPage(pageNum);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className={`
                   w-2.5 h-2.5 rounded-full transition-all duration-200
-                  ${currentPage === i + 1 
+                  ${currentPage === pageNum 
                     ? 'bg-brown-brand w-6' 
                     : isCurrentPageMarked
                     ? 'bg-emerald-500'
@@ -420,6 +580,9 @@ const IqraReadingContent = () => {
               />
             );
           })}
+          {totalPages > 15 && (
+            <span className="text-gray-400 text-xs self-center ml-1">+{totalPages - 15}</span>
+          )}
         </div>
       </div>
 
@@ -467,9 +630,9 @@ const IqraReadingContent = () => {
         </div>
       )}
 
-      {/* Letter Modal */}
-      <LetterModal
-        letter={selectedLetter}
+      {/* Order Modal */}
+      <OrderModal
+        row={selectedRow}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         isPlaying={isPlaying}

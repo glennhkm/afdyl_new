@@ -27,16 +27,6 @@ const TeacherIqraPage = () => {
     router.push(`/guru/modul/iqra/read?volume=${volume.volumeNumber}`);
   };
 
-  // Colors for each volume - Same as student
-  const volumeColors: Record<number, { bg: string; text: string; border: string }> = {
-    1: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-    2: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-    3: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-    4: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-    5: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
-    6: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
-  };
-
   const isLastReadVolume = (volumeNumber: number) => {
     return iqraProgress && iqraProgress.currentJilid === volumeNumber;
   };
@@ -68,9 +58,8 @@ const TeacherIqraPage = () => {
       </div>
 
       {/* Volume Grid - Same as student with teacher highlights */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-2">
         {volumes.map((volume) => {
-          const colors = volumeColors[volume.volumeNumber] || volumeColors[1];
           const isLastRead = isLastReadVolume(volume.volumeNumber);
           
           return (
@@ -79,8 +68,8 @@ const TeacherIqraPage = () => {
               onClick={() => handleVolumeClick(volume)}
               className={`
                 relative overflow-hidden rounded-2xl p-6 
-                ${colors.bg} border-2 ${colors.border}
-                hover:shadow-lg hover:-translate-y-1 
+                bg-brown-brand/5 border-2 border-brown-brand/20
+                hover:shadow-lg hover:-translate-y-1 hover:bg-brown-brand/10
                 transition-all duration-200 
                 text-left group
                 ${isLastRead ? 'ring-2 ring-[#E37100]' : ''}
@@ -98,19 +87,19 @@ const TeacherIqraPage = () => {
               <div className={`
                 absolute top-4 right-4 w-12 h-12 
                 rounded-full flex items-center justify-center
-                bg-white shadow-md
-                ${colors.text} font-bold text-xl
+                bg-brown-brand text-white shadow-md
+                font-bold text-xl
               `}>
                 {volume.volumeNumber}
               </div>
 
               {/* Arabic Title */}
-              <div className={`text-4xl font-arabic ${colors.text} mb-2 ${isLastRead ? 'mt-6' : ''}`}>
+              <div className={`text-4xl font-arabic text-brown-brand mb-2 ${isLastRead ? 'mt-6' : ''}`}>
                 {volume.arabicTitle}
               </div>
 
               {/* Latin Title */}
-              <h3 className={`text-xl font-bold ${colors.text} mb-2`}>
+              <h3 className="text-xl font-bold text-brown-brand mb-2">
                 {volume.title}
               </h3>
 
@@ -128,7 +117,7 @@ const TeacherIqraPage = () => {
               </div>
 
               {/* Hover Arrow */}
-              <div className={`absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${colors.text}`}>
+              <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-brown-brand">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -150,27 +139,27 @@ const TeacherIqraPage = () => {
         </p>
         <ul className="mt-4 space-y-2 text-sm text-gray-600">
           <li className="flex items-start gap-2">
-            <span className="text-emerald-500">•</span>
+            <span className="text-brown-brand">•</span>
             <span><strong>Jilid 1:</strong> Huruf hijaiyah dengan fathah</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-blue-500">•</span>
+            <span className="text-brown-brand">•</span>
             <span><strong>Jilid 2:</strong> Huruf dengan kasrah dan dammah</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-purple-500">•</span>
+            <span className="text-brown-brand">•</span>
             <span><strong>Jilid 3:</strong> Mad (panjang) dan tanwin</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-amber-500">•</span>
+            <span className="text-brown-brand">•</span>
             <span><strong>Jilid 4:</strong> Kombinasi huruf dan suku kata</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-rose-500">•</span>
+            <span className="text-brown-brand">•</span>
             <span><strong>Jilid 5:</strong> Sukun dan tasydid</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-indigo-500">•</span>
+            <span className="text-brown-brand">•</span>
             <span><strong>Jilid 6:</strong> Hukum tajwid lengkap</span>
           </li>
         </ul>

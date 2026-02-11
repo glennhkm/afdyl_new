@@ -1,0 +1,20 @@
+{
+  "level_id": "4-2",
+  "level_title": "Iqro 4 - Halaman 2",
+  "topic": "Practice Words with Tanwin Fathah",
+  "instruction": "Latihan membaca kata-kata dengan tanwin fathah. Ingat, tanwin fathah dibaca pendek!",
+  "content": [
+    { "order_id": 1, "latin": "wa hudān", "arabic": "وَهُدًى" },
+    { "order_id": 2, "latin": "qaʿadān", "arabic": "قَعَدًا" },
+    { "order_id": 3, "latin": "mubārokān", "arabic": "مُبَارَكًا" },
+    { "order_id": 4, "latin": "syahādatan", "arabic": "شَهَادَةً" },
+    { "order_id": 5, "latin": "sabīlahā", "arabic": "سَبِيلَهَا" },
+    { "order_id": 6, "latin": "ʿaḍudān", "arabic": "عَضُدًا" },
+    { "order_id": 7, "latin": "qurūnān", "arabic": "قُرُونًا" },
+    { "order_id": 8, "latin": "jamīʿān", "arabic": "جَمِيعًا" },
+    { "order_id": 9, "latin": "ḍilālān", "arabic": "ضِلَالًا" },
+    { "order_id": 10, "latin": "ṭaʿāmān", "arabic": "طَعَامًا" },
+    { "order_id": 11, "latin": "roghodān", "arabic": "رَغَدًا" },
+    { "order_id": 12, "latin": "zalaqōn", "arabic": "زَلَقًا" }
+  ]
+}

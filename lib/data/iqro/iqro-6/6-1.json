@@ -1,0 +1,32 @@
+{
+  "level_id": 1,
+  "level_title": "Iqro 6 - Halaman 1",
+  "page_number": 1,
+  "topic": {
+    "latin": "Idgham Bighunnah - Nun Sukun/Tanwin meets Waw",
+    "arab": "إدغام بغنة - نون ساكنة/تنوين تلتقي واو"
+  },
+  "instruction_id": "Masuk dengan dengung. Nun sukun atau tanwin bertemu huruf Waw (و) ditekan dan ditahan 2 harakat.",
+  "content": [
+    { "order_id": 1, "latin": "wālidihi", "arabic": "وَالِدِهِ" },
+    { "order_id": 2, "latin": "ʿan", "arabic": "عَنْ" },
+    { "order_id": 3, "latin": "wāḥidin", "arabic": "وَاحِدٍ" },
+    { "order_id": 4, "latin": "min", "arabic": "مِنْ" },
+    { "order_id": 5, "latin": "ḥabbaw-wa nabātā", "arabic": "حَبًّا وَنَبَاتًا" },
+    { "order_id": 6, "latin": "sirājaw-wa hhājā", "arabic": "سِرَاجًا وَهَّاجًا" },
+    { "order_id": 7, "latin": "zajratuw-wāḥidah", "arabic": "زَجْرَةٌ وَاحِدَةٌ" },
+    { "order_id": 8, "latin": "ʿaduwwaw-wa ḥazanā", "arabic": "عَدُوًّا وَحَزَنًا" },
+    { "order_id": 9, "latin": "raḥmataw-wa ʿilmā", "arabic": "رَحْمَةً وَعِلْمًا" },
+    { "order_id": 10, "latin": "muḥīṭun", "arabic": "مُحِيطٌ" },
+    { "order_id": 11, "latin": "miw-warā'ihim", "arabic": "مِنْ وَرَائِهِمْ" },
+    { "order_id": 12, "latin": "wāḥidun", "arabic": "وَاحِدٌ" },
+    { "order_id": 13, "latin": "wa ilāhukum ilāhuw", "arabic": "وَإِلَهُكُمْ إِلَهٌ" },
+    { "order_id": 14, "latin": "kāna fāḥisyataw-wa maqtā", "arabic": "كَانَ فَاحِشَةً وَمَقْتًا" },
+    { "order_id": 15, "latin": "aṡāṡaw-wa ri'yā", "arabic": "أَثَاثًا وَرِءْيًا" },
+    { "order_id": 16, "latin": "aḥsana", "arabic": "أَحْسَنَ" },
+    { "order_id": 17, "latin": "wal-ākhirotu khoirow-wa abqō", "arabic": "وَالْآخِرَةُ خَيْرٌ وَأَبْقَى" },
+    { "order_id": 18, "latin": "illā ḥamīmaw-wa ghassāqā", "arabic": "إِلَّا حَمِيمًا وَغَسَّاقًا" },
+    { "order_id": 19, "latin": "miw-waliyyiw-wa lā naṣīr", "arabic": "مِنْ وَلِيٍّ وَلَا نَصِيرٍ" },
+    { "order_id": 20, "latin": "buhtānaw-wa iṡmam-mubīnā", "arabic": "بُهْتَانًا وَإِثْمًا مُبِينًا" }
+  ]
+}

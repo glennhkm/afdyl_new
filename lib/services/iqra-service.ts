@@ -1,8 +1,22 @@
 // lib/services/iqra-service.ts
 // Service for Iqra' data and audio functionality
 
-import { iqraVolumes, getIqraVolume, getIqraPage, getTotalPages, IqraVolume, IqraPage, IqraLetter } from '@/lib/data/iqra-data';
+import {
+  getAllIqroVolumes,
+  getIqroVolume,
+  getIqroPage,
+  getIqroTotalPages,
+  hasVolumeData,
+  IqroVolume,
+  IqroPage,
+  IqroLetter,
+  IqroRow,
+} from '@/lib/data/iqro';
 import { getTTSService } from './tts-service';
+
+// ============================================
+// Types (re-export and aliases for compatibility)
+// ============================================
 
 export interface IqraVolumeInfo {
   volumeNumber: number;
@@ -11,21 +25,37 @@ export interface IqraVolumeInfo {
   description: string;
   totalPages: number;
   icon: string;
+  hasData: boolean;
 }
 
-// Get all volumes with basic info
+// Re-export types from iqro data with Iqra prefix for compatibility
+export type IqraVolume = IqroVolume;
+export type IqraPage = IqroPage;
+export type IqraLetter = IqroLetter;
+export type IqraRow = IqroRow;
+
+// ============================================
+// Volume Functions
+// ============================================
+
+/**
+ * Get all volumes with basic info for listing
+ */
 export function getAllVolumes(): IqraVolumeInfo[] {
-  return iqraVolumes.map(volume => ({
+  return getAllIqroVolumes().map(volume => ({
     volumeNumber: volume.volumeNumber,
     title: volume.title,
     arabicTitle: volume.arabicTitle,
     description: volume.description,
-    totalPages: volume.pages.length,
+    totalPages: volume.totalPages,
     icon: getVolumeIcon(volume.volumeNumber),
+    hasData: hasVolumeData(volume.volumeNumber),
   }));
 }
 
-// Get icon for each volume based on difficulty
+/**
+ * Get icon for each volume based on number
+ */
 function getVolumeIcon(volumeNumber: number): string {
   const icons: Record<number, string> = {
     1: 'RiNumber1',
@@ -38,25 +68,39 @@ function getVolumeIcon(volumeNumber: number): string {
   return icons[volumeNumber] || 'RiBookOpenLine';
 }
 
-// Get volume details
-export function getVolumeDetails(volumeNumber: number): IqraVolume | null {
-  const volume = getIqraVolume(volumeNumber);
-  return volume || null;
+/**
+ * Get volume details
+ */
+export function getVolumeDetails(volumeNumber: number): IqroVolume | null {
+  return getIqroVolume(volumeNumber);
 }
 
-// Get page from volume
-export function getPageFromVolume(volumeNumber: number, pageNumber: number): IqraPage | null {
-  const page = getIqraPage(volumeNumber, pageNumber);
-  return page || null;
+// ============================================
+// Page Functions
+// ============================================
+
+/**
+ * Get page from volume
+ */
+export function getPageFromVolume(volumeNumber: number, pageNumber: number): IqroPage | null {
+  return getIqroPage(volumeNumber, pageNumber);
 }
 
-// Get total pages for a volume
+/**
+ * Get total pages for a volume
+ */
 export function getVolumeTotalPages(volumeNumber: number): number {
-  return getTotalPages(volumeNumber);
+  return getIqroTotalPages(volumeNumber);
 }
 
-// Play audio for a letter using TTS
-export async function playLetterAudio(letter: IqraLetter): Promise<void> {
+// ============================================
+// Audio Functions
+// ============================================
+
+/**
+ * Play audio for a letter using TTS
+ */
+export async function playLetterAudio(letter: IqroLetter): Promise<void> {
   const ttsService = getTTSService();
   
   // Use audioText if provided, otherwise use the arabic text
@@ -70,19 +114,43 @@ export async function playLetterAudio(letter: IqraLetter): Promise<void> {
   }
 }
 
-// Stop any playing audio
+/**
+ * Play audio for a full row
+ */
+export async function playRowAudio(row: IqroRow): Promise<void> {
+  const ttsService = getTTSService();
+  
+  try {
+    await ttsService.speak(row.fullArabic);
+  } catch (error) {
+    console.error('[IqraService] Error playing row audio:', error);
+    throw error;
+  }
+}
+
+/**
+ * Stop any playing audio
+ */
 export function stopAudio(): void {
   const ttsService = getTTSService();
   ttsService.stop();
 }
 
-// Check if audio is currently playing
+/**
+ * Check if audio is currently playing
+ */
 export function isAudioPlaying(): boolean {
   const ttsService = getTTSService();
   return ttsService.getIsSpeaking();
 }
 
-// Get Arabic number representation
+// ============================================
+// Utility Functions
+// ============================================
+
+/**
+ * Get Arabic number representation
+ */
 export function getArabicNumber(number: number): string {
   const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
   return number
@@ -92,5 +160,9 @@ export function getArabicNumber(number: number): string {
     .join('');
 }
 
-// Export types
-export type { IqraVolume, IqraPage, IqraLetter };
+/**
+ * Check if volume has data available
+ */
+export function isVolumeAvailable(volumeNumber: number): boolean {
+  return hasVolumeData(volumeNumber);
+}

@@ -1,0 +1,43 @@
+{
+  "level_id": 3,
+  "level_title": "IQRO' 3",
+  "topic": {
+    "latin": "Introduction to Kasrah (i sound)",
+    "arab": "حَرَكَةُ الْكَسْرَةِ"
+  },
+  "instruction_id": "Semua dibaca pendek, tidak boleh dipanjang-panjangkan.",
+  "instruction_en": "All should be read short, not to be elongated.",
+  "instruction_ar": "كُلُّهَا تُقْرَأُ قَصِيرَةً وَلَا تُمَدُّ.",
+  "content": [
+    {
+      "order_id": 1,
+      "latin": "TI TA DA DI NA NI MA MI",
+      "arabic": "تِ تَ    دَ دِ    نَ نِ    مَ مِ"
+    },
+    {
+      "order_id": 2,
+      "latin": "BA BI BI BI TA TI TI TI",
+      "arabic": "بَ بِ    بِ بِ    تَ تِ    تِ تِ"
+    },
+    {
+      "order_id": 3,
+      "latin": "NABATA NABATI NAJASA NAJASI",
+      "arabic": "نَبَتَ    نَبَتِ    نَجَسَ    نَجَسِ"
+    },
+    {
+      "order_id": 4,
+      "latin": "BALADA BALADI HASANA HASANI",
+      "arabic": "بَلَدَ    بَلَدِ    حَسَنَ    حَسَنِ"
+    },
+    {
+      "order_id": 5,
+      "latin": "'AMALA SYAHIDA FAHIMA LAZIMA",
+      "arabic": "عَمَلَ    شَهِدَ    فَهِمَ    لَزِمَ"
+    },
+    {
+      "order_id": 6,
+      "latin": "BA TI JA KHI DA DI DZA FI FA I MA RA MI",
+      "arabic": "بَ تِ جَ خِ دَ دِ ذَ فِ فَ اِ مَ رَ مِ"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "level_id": 3,
+  "level_title": "Iqro 6 - Halaman 3",
+  "page_number": 3,
+  "topic": {
+    "latin": "Latihan Bacaan Panjang dari Al-Qur'an",
+    "arab": "تدريب قراءة طويلة من القرآن"
+  },
+  "instruction_id": "Latihan membaca ayat-ayat Al-Qur'an dengan memperhatikan tajwid yang telah dipelajari.",
+  "content": [
+    { "order_id": 1, "latin": "wa innallāha qad aḥāṭa bikulli syai'in 'ilmā", "arabic": "وَاِنَّ اللّٰهَ قَدْ اَحَاطَ بِكُلِّ شَيْءٍ عِلْمًا" },
+    { "order_id": 2, "latin": "lawallaita minhum firāraw-wa lamuli'ta minhum ru'bā", "arabic": "لَوَلَّيْتَ مِنْهُمْ فِرَارًا وَلَمُلِئْتَ مِنْهُمْ رُعْبًا" },
+    { "order_id": 3, "latin": "falanaquṣṣanna 'alaihim bi'ilmiw-wa mā kunnā ghā'ibīn", "arabic": "فَلَنَقُصَّنَّ عَلَيْهِمْ بِعِلْمٍ وَمَاكُنَّا غَائِبِينَ" },
+    { "order_id": 4, "latin": "hāżā bayānul-linnāsi wa hudaw-wa mau'iẓatul-lilmuttaqīn", "arabic": "هٰذَا بَيَانٌ لِلنَّاسِ وَهُدًى وَمَوْعِظَةٌ لِلْمُتَّقِينَ" },
+    { "order_id": 5, "latin": "wa laqad ja'alnā fis-samā'i burūjaw-wa zayyannāhā lin-nāẓirīn", "arabic": "وَلَقَدْ جَعَلْنَا فِى السَّمَاءِ بُرُوجًا وَزَيَّنّٰهَا لِلنّٰظِرِينَ" },
+    { "order_id": 6, "latin": "inna wa'dallāhi ḥaqquw-wa lā yastakhiffannakallażīna lā yūqinūn", "arabic": "اِنَّ وَعْدَ اللّٰهِ حَقٌّ وَلَايَسْتَخِفَّنَّكَ الَّذِينَ لَا يُوقِنُونَ" },
+    { "order_id": 7, "latin": "wa lahum fīhā azwājum-muṭahharatuw-wa hum fīhā khālidūn", "arabic": "وَلَهُمْ فِيهَا اَزْوَاجٌ مُطَهَّرَةٌ وَهُمْ فِيهَا خٰلِدُونَ" },
+    { "order_id": 8, "latin": "ittabi'ū mal-lā yas'alukum ajraw-wa hum muhtadūn", "arabic": "اِتَّبِعُوا مَنْ لَا يَسْئَلُكُمْ اَجْرًا وَهُمْ مُهْتَدُونَ" }
+  ]
+}

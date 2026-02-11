@@ -1,0 +1,53 @@
+{
+  "level_id": 2,
+  "level_title": "IQRO' 2",
+  "topic": {
+    "latin": "Letter Jim (ج) and Two-Letter Combinations",
+    "arab": "حَرْفُ الْجِيمِ وَمُرَكَّبَاتُ الْحُرُوفِ"
+  },
+  "instruction_id": "Berlatih membaca huruf Jim dan kombinasi dua huruf dengan fathah.",
+  "instruction_en": "Practice reading the letter Jim and two-letter combinations with fathah.",
+  "instruction_ar": "تَدَرَّبْ عَلَى قِرَاءَةِ حَرْفِ الْجِيمِ وَمُرَكَّبَاتِ الْحُرُوفِ بِالْفَتْحَةِ.",
+  "content": [
+    {
+      "order_id": 1,
+      "latin": "JA RA = JARA HAJARA",
+      "arabic": "جَ رَ = جَرَ    حَجَرَ"
+    },
+    {
+      "order_id": 2,
+      "latin": "BAJA JABA KHADA NADA",
+      "arabic": "بَجَ . جَبَ    خَدَ . نَدَ"
+    },
+    {
+      "order_id": 3,
+      "latin": "SYAJA HAWA KHAZA YATA",
+      "arabic": "شَجَ . هَـوَ    خَزَ . يَتَ"
+    },
+    {
+      "order_id": 4,
+      "latin": "NAJA HAYA JASA YASYA",
+      "arabic": "نَجَ . حَيَ    جَسَ . يَشَ"
+    },
+    {
+      "order_id": 5,
+      "latin": "MASYA RASHA YADHA KHATHA",
+      "arabic": "مَشَ . رَصَ    يَضَ . خَطَ"
+    },
+    {
+      "order_id": 6,
+      "latin": "ZHANNA DA'A GHAZA NAFA",
+      "arabic": "ظَنَ . دَعَ    غَزَ . نَفَ"
+    },
+    {
+      "order_id": 7,
+      "latin": "YAQA JAKA KHALA YAYA",
+      "arabic": "يَقَ . جَكَ    خَلَ . يَيَ"
+    },
+    {
+      "order_id": 8,
+      "latin": "HADZA YATAMA NAJAHA JAYA",
+      "arabic": "هَذَ . يَتَمَ    نَجَحَ . جَيَ"
+    }
+  ]
+}

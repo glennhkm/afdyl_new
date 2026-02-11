@@ -1,0 +1,53 @@
+{
+  "level_id": 2,
+  "level_title": "IQRO' 2",
+  "topic": {
+    "latin": "Letter Nun (ن) with Fathah",
+    "arab": "حَرْفُ النُّونِ بِالْفَتْحَةِ"
+  },
+  "instruction_id": "Berlatih membaca huruf Nun dengan fathah dan menghubungkannya dengan huruf lain.",
+  "instruction_en": "Practice reading the letter Nun with fathah and connecting it with other letters.",
+  "instruction_ar": "تَدَرَّبْ عَلَى قِرَاءَةِ حَرْفِ النُّونِ بِالْفَتْحَةِ وَوَصْلِهِ بِالْحُرُوفِ الأُخْرَى.",
+  "content": [
+    {
+      "order_id": 1,
+      "latin": "NA = DZA.... NABA = NABA",
+      "arabic": "نَ = ذَ....    نَبَ = نَبَ"
+    },
+    {
+      "order_id": 2,
+      "latin": "NANA NATANA NABABA BANANA",
+      "arabic": "نَنَ    نَتَنَ . نَبَبَ    بَنَنَ"
+    },
+    {
+      "order_id": 3,
+      "latin": "NABATA BANATA TSABANA NATSABA",
+      "arabic": "نَبَتَ    بَنَتَ . ثَبَنَ    نَتَبَ"
+    },
+    {
+      "order_id": 4,
+      "latin": "RABANA BANARA BADZANA NABADZA",
+      "arabic": "رَبَنَ    بَنَرَ . بَذَنَ    نَبَذَ"
+    },
+    {
+      "order_id": 5,
+      "latin": "BADARA NADZARA DZANABA WANADZA",
+      "arabic": "بَدَرَ    نَذَرَ . ذَنَبَ    وَنَذَ"
+    },
+    {
+      "order_id": 6,
+      "latin": "DZARAHA NAZA'A NABAA NABA-A",
+      "arabic": "ذَرَحَ    نَزَعَ . نَبَاَ    نَبَأَ"
+    },
+    {
+      "order_id": 7,
+      "latin": "TSABATA TATSABA WANAA NAWAFA",
+      "arabic": "ثَبَتَ    تَثَبَ . وَنَأَ    نَوَفَ"
+    },
+    {
+      "order_id": 8,
+      "latin": "BADANA DANATA WANANA NAWANA",
+      "arabic": "بَدَنَ    دَنَتَ . وَنَنَ    نَوَنَ"
+    }
+  ]
+}

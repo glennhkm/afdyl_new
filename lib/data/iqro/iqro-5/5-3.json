@@ -1,0 +1,22 @@
+{
+  "level_id": "5-3",
+  "level_title": "Iqro 5 - Halaman 3",
+  "topic": "Waqaf - Stopping Rules",
+  "instruction": "Bila waqof/berhenti, huruf terakhir dibaca sukun mati. Contoh: أَمِينَ dibaca أَمِينْ",
+  "content": [
+    { "order_id": 1, "latin": "muhtadīn", "arabic": "مُهْتَدِينَ" },
+    { "order_id": 2, "latin": "nasta'īn", "arabic": "نَسْتَعِينُ" },
+    { "order_id": 3, "latin": "wa ṭūri sīnīn", "arabic": "وَطُورِسِينِينَ" },
+    { "order_id": 4, "latin": "'ainal-yaqīni", "arabic": "عَيْنَ الْيَقِينِ" },
+    { "order_id": 5, "latin": "mustahzi'ūn", "arabic": "مُسْتَهْزِءُونَ" },
+    { "order_id": 6, "latin": "yakżibūn", "arabic": "يَكْذِبُونَ" },
+    { "order_id": 7, "latin": "muṣliḥūn", "arabic": "مُصْلِحُونَ" },
+    { "order_id": 8, "latin": "mu'riḍūn", "arabic": "مُعْرِضُونَ" },
+    { "order_id": 9, "latin": "iżā ḥasad", "arabic": "إِذَا حَسَدَ" },
+    { "order_id": 10, "latin": "fil-'uqadi", "arabic": "فِي الْعُقَدِ" },
+    { "order_id": 11, "latin": "aṣḥābil-fīli", "arabic": "أَصْحٰبِ الْفِيلِ" },
+    { "order_id": 12, "latin": "fī taḍlīlin", "arabic": "فِي تَضْلِيلٍ" },
+    { "order_id": 13, "latin": "minal-mumtarīn", "arabic": "مِنَ الْمُمْتَرِينَ" },
+    { "order_id": 14, "latin": "yakhtalifūn", "arabic": "يَخْتَلِفُونَ" }
+  ]
+}

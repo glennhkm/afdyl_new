@@ -1,0 +1,32 @@
+{
+  "level_id": "4-1",
+  "level_title": "Iqro 4 - Halaman 1",
+  "topic": "Introduction to Tanwin Fathah (ـًـ)",
+  "instruction": "BAN dibaca PENDEK! Alif setelah tanwin fathah (ا) dianggap tidak ada.",
+  "content": [
+    { "order_id": 1, "latin": "ja jān", "arabic": "جَ جًا" },
+    { "order_id": 2, "latin": "ṡa ṡān", "arabic": "ثَ ثًا" },
+    { "order_id": 3, "latin": "ta tān", "arabic": "تَ تًا" },
+    { "order_id": 4, "latin": "ba bān", "arabic": "بَ بًا" },
+    { "order_id": 5, "latin": "ka kān", "arabic": "كَ كًا" },
+    { "order_id": 6, "latin": "fa fān", "arabic": "فَ فًا" },
+    { "order_id": 7, "latin": "za zān", "arabic": "زَ زًا" },
+    { "order_id": 8, "latin": "ża żān", "arabic": "ذَ ذًا" },
+    { "order_id": 9, "latin": "la lān", "arabic": "لَ لًا" },
+    { "order_id": 10, "latin": "ya yān", "arabic": "يَ يًا" },
+    { "order_id": 11, "latin": "ẓo ẓōn", "arabic": "ظَ ظًا" },
+    { "order_id": 12, "latin": "gho ghōn", "arabic": "غَ غًا" },
+    { "order_id": 13, "latin": "ʿamalān", "arabic": "عَمَلًا" },
+    { "order_id": 14, "latin": "ʿamala", "arabic": "عَمَلَ" },
+    { "order_id": 15, "latin": "aḥadān", "arabic": "اَحَدًا" },
+    { "order_id": 16, "latin": "aḥada", "arabic": "اَحَدَ" },
+    { "order_id": 17, "latin": "ṣōliḥān", "arabic": "صَالِحًا" },
+    { "order_id": 18, "latin": "ṣōliḥa", "arabic": "صَالِحَ" },
+    { "order_id": 19, "latin": "ḥasanān", "arabic": "حَسَنًا" },
+    { "order_id": 20, "latin": "ḥasana", "arabic": "حَسَنَ" },
+    { "order_id": 21, "latin": "nūḥān", "arabic": "نُوحًا" },
+    { "order_id": 22, "latin": "jūʿān", "arabic": "جُوعًا" },
+    { "order_id": 23, "latin": "basyīrān", "arabic": "بَشِيرًا" },
+    { "order_id": 24, "latin": "nażīrān", "arabic": "نَذِيرًا" }
+  ]
+}

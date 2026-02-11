@@ -1,0 +1,31 @@
+{
+  "level_id": "5-1",
+  "level_title": "Iqro 5 - Halaman 1",
+  "topic": "Alif Lam (ال) - The Definite Article",
+  "instruction": "Alif dianggap tidak ada. Alif Lam dibaca menyatu dengan kata setelahnya.",
+  "content": [
+    { "order_id": 1, "latin": "wal-ḥamdu", "arabic": "وَالْحَمْدُ" },
+    { "order_id": 2, "latin": "al-ḥamdu", "arabic": "اَلْحَمْدُ" },
+    { "order_id": 3, "latin": "maʿal-ḥamdi", "arabic": "مَعَ الْحَمْدِ" },
+    { "order_id": 4, "latin": "bil-ḥamdi", "arabic": "بِالْحَمْدِ" },
+    { "order_id": 5, "latin": "lakal-ḥamdu", "arabic": "لَكَ الْحَمْدُ" },
+    { "order_id": 6, "latin": "bil-fātiḥati", "arabic": "بِالْفَاتِحَةِ" },
+    { "order_id": 7, "latin": "wal-fajri", "arabic": "وَالْفَجْرِ" },
+    { "order_id": 8, "latin": "wal-ʿaṣri", "arabic": "وَالْعَصْرِ" },
+    { "order_id": 9, "latin": "wal-īmāni", "arabic": "وَالْإِيمَانِ" },
+    { "order_id": 10, "latin": "bil-islāmi", "arabic": "بِالْإِسْلَامِ" },
+    { "order_id": 11, "latin": "fil-kitābi", "arabic": "فِي الْكِتَبِ" },
+    { "order_id": 12, "latin": "waqtarib", "arabic": "وَاقْتَرِبْ" },
+    { "order_id": 13, "latin": "wastaghfirhu", "arabic": "وَاسْتَغْفِرْهُ" },
+    { "order_id": 14, "latin": "wamra'atuhu", "arabic": "وَامْرَأَتُهُ" },
+    { "order_id": 15, "latin": "wal-ʿādiyāti", "arabic": "وَالْعَدِيَاتِ" },
+    { "order_id": 16, "latin": "māl-qōriʿatu", "arabic": "مَا الْقَارِعَةُ" },
+    { "order_id": 17, "latin": "bismika", "arabic": "بِاسْمِكَ" },
+    { "order_id": 18, "latin": "ʿalal-af'idati", "arabic": "عَلَى الْأَفِدَةِ" },
+    { "order_id": 19, "latin": "fil-arḍi", "arabic": "فِي الْأَرْضِ" },
+    { "order_id": 20, "latin": "bir-roḥmati", "arabic": "بِالْمَرْحَمَةِ" },
+    { "order_id": 21, "latin": "wal-musyrikīna", "arabic": "وَالْمُشْرِكِينَ" },
+    { "order_id": 22, "latin": "lil-kāfirīna", "arabic": "لِلْكَافِرِينَ" },
+    { "order_id": 23, "latin": "fil-jaḥīmi", "arabic": "فِي الْجَحِيمِ" }
+  ]
+}

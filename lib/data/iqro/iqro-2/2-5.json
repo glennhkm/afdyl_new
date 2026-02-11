@@ -1,0 +1,53 @@
+{
+  "level_id": 2,
+  "level_title": "IQRO' 2",
+  "topic": {
+    "latin": "Letters Sin, Shin, Shad, Dhad Combinations",
+    "arab": "حُرُوفُ السِّينِ وَالشِّينِ وَالصَّادِ وَالضَّادِ"
+  },
+  "instruction_id": "Berlatih membaca kombinasi huruf Sin, Shin, Shad, dan Dhad dengan fathah.",
+  "instruction_en": "Practice reading combinations of Sin, Shin, Shad, and Dhad letters with fathah.",
+  "instruction_ar": "تَدَرَّبْ عَلَى قِرَاءَةِ مُرَكَّبَاتِ حُرُوفِ السِّينِ وَالشِّينِ وَالصَّادِ وَالضَّادِ بِالْفَتْحَةِ.",
+  "content": [
+    {
+      "order_id": 1,
+      "latin": "SA DA = SADA SYA RA = SYARA",
+      "arabic": "سَ دَ = سَدَ    شَ رَ = شَرَ"
+    },
+    {
+      "order_id": 2,
+      "latin": "SHA DA = SHADA DHA RA = DHARA",
+      "arabic": "صَ دَ = صَدَ    ضَ رَ = ضَرَ"
+    },
+    {
+      "order_id": 3,
+      "latin": "SANA BASA SYATA YASA",
+      "arabic": "سَنَ    بَسَ    شَتَ    يَسَ"
+    },
+    {
+      "order_id": 4,
+      "latin": "TSARA SHAHA NAMA 'ADZA",
+      "arabic": "ثَرَ    صَحَ    نَمَ    عَ ذَ"
+    },
+    {
+      "order_id": 5,
+      "latin": "SAYA SHALA GHAWA SYAQA",
+      "arabic": "سَيَ    صَلَ    غَـوَ    شَقَ"
+    },
+    {
+      "order_id": 6,
+      "latin": "NAZHA DHAFA THAHA NAZA",
+      "arabic": "نَظَ    ضَفَ    طَهَ    نَزَ"
+    },
+    {
+      "order_id": 7,
+      "latin": "QAKA KHASYA NADZA SHADA",
+      "arabic": "قَكَ    خَشَ    نَذَ    صَدَ"
+    },
+    {
+      "order_id": 8,
+      "latin": "JAMA SYA-A YAYA YADHA",
+      "arabic": "جَمَ    شَأَ    يَيَ    يَضَ"
+    }
+  ]
+}

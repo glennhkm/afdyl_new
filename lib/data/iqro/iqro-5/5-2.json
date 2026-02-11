@@ -1,0 +1,29 @@
+{
+  "level_id": "5-2",
+  "level_title": "Iqro 5 - Halaman 2",
+  "topic": "Words with Silent Alif",
+  "instruction": "INGAT! Banyak huruf Alif dianggap tidak ada.",
+  "content": [
+    { "order_id": 1, "latin": "fil-arḍi", "arabic": "فِي الْأَرْضِ" },
+    { "order_id": 2, "latin": "maq-tatalū", "arabic": "مَا اقْتَتَلُوْا" },
+    { "order_id": 3, "latin": "mak-tasabat", "arabic": "مَا اكْتَسَبَتْ" },
+    { "order_id": 4, "latin": "wa bil-ākhiroti", "arabic": "وَبِالْآخِرَةِ" },
+    { "order_id": 5, "latin": "wa maqōmī", "arabic": "وَمَقَامِي" },
+    { "order_id": 6, "latin": "sayubṭiluhu", "arabic": "سَيُبْطِلُهُ" },
+    { "order_id": 7, "latin": "muż'inīna", "arabic": "مُذْعِنِينَ" },
+    { "order_id": 8, "latin": "wal-af'idah", "arabic": "وَالْأَفِدَةَ" },
+    { "order_id": 9, "latin": "minal-ghoiẓi", "arabic": "مِنَ الْغَيْظِ" },
+    { "order_id": 10, "latin": "minal-musyrikīna", "arabic": "مِنَ الْمُشْرِكِينَ" },
+    { "order_id": 11, "latin": "mu'jizīna", "arabic": "مُعْجِزِينَ" },
+    { "order_id": 12, "latin": "ghisyāwatun", "arabic": "غِشَاوَةٌ" },
+    { "order_id": 13, "latin": "wa mau'iẓotun", "arabic": "وَمَوْعِظَةٌ" },
+    { "order_id": 14, "latin": "bil-mu'minīna", "arabic": "بِالْمُؤْمِنِينَ" },
+    { "order_id": 15, "latin": "wa ma'wāhum", "arabic": "وَمَأْوٰهُمْ" },
+    { "order_id": 16, "latin": "kamisykātin", "arabic": "كَمِشْكَوٰةٍ" },
+    { "order_id": 17, "latin": "wal-āṣōli", "arabic": "وَالْآصَالِ" },
+    { "order_id": 18, "latin": "fī ṭughyānihim", "arabic": "فِي طُغْيَانِهِمْ" },
+    { "order_id": 19, "latin": "ghufrōnaka", "arabic": "غُفْرَانَكَ" },
+    { "order_id": 20, "latin": "lā tu'ākhiżnā", "arabic": "لَا تُؤَاخِذْنَا" },
+    { "order_id": 21, "latin": "fīhā ismuhu", "arabic": "فِيهَا اسْمُهُ" }
+  ]
+}

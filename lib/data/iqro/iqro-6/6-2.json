@@ -1,0 +1,28 @@
+{
+  "level_id": 2,
+  "level_title": "Iqro 6 - Halaman 2",
+  "page_number": 2,
+  "topic": {
+    "latin": "Latihan Idgham Bighunnah dengan Waw",
+    "arab": "تدريب إدغام بغنة مع واو"
+  },
+  "instruction_id": "Lanjutan latihan Idgham Bighunnah. Perhatikan bacaan yang masuk dengan dengung.",
+  "content": [
+    { "order_id": 1, "latin": "wa wālidin wa mā walad", "arabic": "وَوَالِدٍ وَمَاوَلَدَ" },
+    { "order_id": 2, "latin": "nūḥiw-wa 'ādiw-wa ṡamūd", "arabic": "نُوحٍ وَعَادٍ وَثَمُودَ" },
+    { "order_id": 3, "latin": "sab'atuw-wa ṡāminuhum", "arabic": "سَبْعَةٌ وَثَامِنُهُمْ" },
+    { "order_id": 4, "latin": "hudaw-wa busyrā lil-mu'minīn", "arabic": "هُدًى وَبُشْرَى لِلْمُؤْمِنِينَ" },
+    { "order_id": 5, "latin": "wa fariḥū bil-ḥayātid-dunyā", "arabic": "وَفَرِحُوابِالْحَيٰوةِالدُّنْيَا" },
+    { "order_id": 6, "latin": "ṡawābaw-wa khoiro maroddā", "arabic": "ثَوَابًا وَخَيْرَمَّرَدًّا" },
+    { "order_id": 7, "latin": "allażī jama'a mālaw-wa 'addadah", "arabic": "الَّذِيجَمَعَ مَالًا وَعَدَّدَهُ" },
+    { "order_id": 8, "latin": "yaḥsabu anna mālahu akhladah", "arabic": "يَحْسَبُ اَنَّ مَالَهُ اَخْلَدَهُ" },
+    { "order_id": 9, "latin": "ṭā'atuw-wa qoulum-ma'rūf", "arabic": "طَاعَةٌ وَقَوْلٌ مَعْرُوفٌ" },
+    { "order_id": 10, "latin": "wa jannātiw-wa 'uyūn", "arabic": "وَجَنّٰتٍ وَعُيُونٍ" },
+    { "order_id": 11, "latin": "naḍrataw-wa surūrā", "arabic": "نَضْرَةٌ وَسُرُورًا" },
+    { "order_id": 12, "latin": "wa fākihataw-wa abbā", "arabic": "وَفَاكِهَةٌ وَاَبًّا" },
+    { "order_id": 13, "latin": "lā bāridiw-wa lā karīm", "arabic": "لَابَارِدٍ وَلَاكَرِيمٍ" },
+    { "order_id": 14, "latin": "fī samūmiw-wa ḥamīm", "arabic": "فِي سَمُومٍ وَحَمِيمٍ" },
+    { "order_id": 15, "latin": "miw-warā'ihi 'ażāb", "arabic": "مِنْ وَرَائِهِ عَذَابٌ" },
+    { "order_id": 16, "latin": "maghfiratuw-wa ajrun 'aẓīm", "arabic": "مَغْفِرَةٌ وَاَجْرٌعَظِيمٌ" }
+  ]
+}

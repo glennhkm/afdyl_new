@@ -1,0 +1,24 @@
+{
+  "level_id": "4-3",
+  "level_title": "Iqro 4 - Halaman 3",
+  "topic": "MAD (Long) vs Non-MAD (Short) with Tanwin",
+  "instruction": "Harus selalu diperhatikan: Bacaan mad (panjang) dan yang bukan mad (pendek).",
+  "content": [
+    { "order_id": 1, "latin": "ḥakīmān", "arabic": "حَكِيمًا" },
+    { "order_id": 2, "latin": "ʿazīzān", "arabic": "عَزِيزًا" },
+    { "order_id": 3, "latin": "ʿalīmān", "arabic": "عَلِيمًا" },
+    { "order_id": 4, "latin": "samīʿān", "arabic": "سَمِيعًا" },
+    { "order_id": 5, "latin": "ẓōlimān", "arabic": "ظَالِمًا" },
+    { "order_id": 6, "latin": "wa aṣīlān", "arabic": "وَأَصِيلًا" },
+    { "order_id": 7, "latin": "alīmān", "arabic": "أَلِيمًا" },
+    { "order_id": 8, "latin": "ʿażābān", "arabic": "عَذَابًا" },
+    { "order_id": 9, "latin": "juruzān", "arabic": "جُرُزًا" },
+    { "order_id": 10, "latin": "ṣoʿīdān", "arabic": "صَعِيدًا" },
+    { "order_id": 11, "latin": "faqīrān", "arabic": "فَقِيرًا" },
+    { "order_id": 12, "latin": "yatīmān", "arabic": "يَتِيمًا" },
+    { "order_id": 13, "latin": "ghofūrān", "arabic": "غَفُورًا" },
+    { "order_id": 14, "latin": "ḥalīmān", "arabic": "حَلِيمًا" },
+    { "order_id": 15, "latin": "ṭohūrān", "arabic": "طَهُورًا" },
+    { "order_id": 16, "latin": "rosūlān", "arabic": "رَسُولًا" }
+  ]
+}
