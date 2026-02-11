@@ -617,7 +617,7 @@ const TangkapHijaiyahGame = () => {
 
       {/* ========== GAME SCREEN ========== */}
       {(gameState.status === "playing" || gameState.status === "paused" || gameState.status === "gameover") && (
-        <div ref={gameContainerRef} className="relative w-full h-[calc(100vh-64px)] lg:h-[calc(100vh-200px)] overflow-hidden">
+        <div ref={gameContainerRef} className="relative w-full h-[calc(100vh-128px)] lg:h-[calc(100vh-200px)] overflow-hidden">
           {/* Video is rendered as fixed element above, so we just add game elements here */}
           
           {/* Tracking overlay canvas - shows bounding box on camera */}
