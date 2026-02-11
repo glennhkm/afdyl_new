@@ -511,19 +511,21 @@ const TangkapHijaiyahGame = () => {
       */}
       <video
         ref={videoRef}
-        className={`fixed inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-          isGameActive ? "opacity-100 z-0" : "opacity-0 pointer-events-none -z-10"
+        className={`fixed inset-x-0 w-full object-cover transition-opacity duration-300 ${
+          isGameActive ? "opacity-100 z-0 top-0 h-[calc(100vh)]" : "opacity-0 pointer-events-none -z-10 top-0 h-full"
         }`}
         playsInline
         muted
         autoPlay
-        style={{ transform: "scaleX(-1)", top: isGameActive ? "64px" : 0, height: isGameActive ? "calc(100% - 64px)" : "100%" }}
+        style={{ transform: "scaleX(-1)" }}
       />
       {/* Hidden canvas for pose detection - always in DOM */}
       <canvas ref={canvasRef} className="hidden" />
       
       <Topbar 
         title="Tangkap Hijaiyah" 
+        textColor={gameState.status === 'menu' ? 'text-black' : 'text-background'}
+        isTransparentBg={gameState.status === "menu" ? false : true}
         onBackClick={() => {
           endGame();
           router.back();
@@ -588,7 +590,7 @@ const TangkapHijaiyahGame = () => {
 
       {/* ========== COUNTDOWN SCREEN ========== */}
       {gameState.status === "countdown" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden" style={{ top: "64px" }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden" style={{ top: "0px" }}>
           {/* Tracking overlay during countdown */}
           <canvas 
             ref={overlayCanvasRef}
@@ -614,14 +616,14 @@ const TangkapHijaiyahGame = () => {
       )}
 
       {/* ========== GAME SCREEN ========== */}
-      {(gameState.status === "playing" || gameState.status === "paused") && (
-        <div ref={gameContainerRef} className="relative w-full h-[calc(100vh-64px)] overflow-hidden">
+      {(gameState.status === "playing" || gameState.status === "paused" || gameState.status === "gameover") && (
+        <div ref={gameContainerRef} className="relative w-full h-[calc(100vh-64px)] lg:h-[calc(100vh-200px)] overflow-hidden">
           {/* Video is rendered as fixed element above, so we just add game elements here */}
           
           {/* Tracking overlay canvas - shows bounding box on camera */}
           <canvas 
             ref={overlayCanvasRef}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-[1]"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-1"
             style={{ transform: "scaleX(-1)" }}
           />
           
@@ -781,7 +783,7 @@ const TangkapHijaiyahGame = () => {
 
       {/* ========== GAME OVER SCREEN ========== */}
       {gameState.status === "gameover" && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 bg-black/80 z-100 flex items-center justify-center px-4">
           <div className="bg-[#FDFFF2] rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl border border-[#BE9D77]/30">
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 bg-red-500/20 rounded-full flex items-center justify-center">
               <Icon name="RiEmotionSadLine" className="w-10 h-10 sm:w-12 sm:h-12 text-red-500" />
