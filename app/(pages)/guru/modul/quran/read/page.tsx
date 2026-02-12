@@ -57,6 +57,14 @@ const SettingsModal = React.memo(({
   const fontSizeRef = useRef(initialFontSize);
   const wordSpacingRef = useRef(initialWordSpacing);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   // Debounced sync to parent - only updates main state after user stops sliding
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -79,7 +87,7 @@ const SettingsModal = React.memo(({
   }, [localWordSpacing, onWordSpacingChange]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-200 flex items-end lg:items-center justify-center">
+    <div className="fixed inset-0  bg-black/50 z-200 flex items-end lg:items-center justify-center h-screen">
       <div className="bg-white w-full lg:w-125 lg:rounded-2xl rounded-t-3xl max-h-[80vh] sm:max-h-[75vh] overflow-auto pb-10 lg:pb-0">
         <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b sticky top-0 bg-white z-10">
           <h2 className="text-base sm:text-lg font-semibold text-black">
