@@ -9,6 +9,7 @@ import {
   shuffleArray,
   getRandomIndex,
 } from "@/lib/data/hijaiyah-game-data";
+import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
 // Initial values computed once
 const initialShuffledLetters = shuffleArray([...hijaiyahGameLetters]);
@@ -16,6 +17,16 @@ const initialAudioIndices = hijaiyahGameLetters.map((_, i) => i);
 const initialAudioIndex = getRandomIndex([...initialAudioIndices]);
 
 const TebakHijaiyahPage = () => {
+  const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
+
+  // Disable pull-to-refresh when component mounts (game page)
+  useEffect(() => {
+    disablePullToRefresh();
+    return () => {
+      enablePullToRefresh();
+    };
+  }, [disablePullToRefresh, enablePullToRefresh]);
+
   // Game state
   const [shuffledLetters, setShuffledLetters] = useState<HijaiyahGameLetter[]>(initialShuffledLetters);
   const [currentAudioIndex, setCurrentAudioIndex] = useState(initialAudioIndex);

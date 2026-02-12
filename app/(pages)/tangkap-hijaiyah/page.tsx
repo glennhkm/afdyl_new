@@ -14,6 +14,7 @@ import {
   cleanupHandTracking,
   HandTrackingResult,
 } from "@/lib/services/hand-tracking-service";
+import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
 // ============================================
 // GAME CONFIGURATION
@@ -151,6 +152,15 @@ TargetLetterDisplay.displayName = "TargetLetterDisplay";
 // ============================================
 const TangkapHijaiyahGame = () => {
   const router = useRouter();
+  const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
+
+  // Disable pull-to-refresh when component mounts (game page)
+  useEffect(() => {
+    disablePullToRefresh();
+    return () => {
+      enablePullToRefresh();
+    };
+  }, [disablePullToRefresh, enablePullToRefresh]);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -1034,9 +1044,9 @@ const TangkapHijaiyahGame = () => {
               }}
             />
             {/* Horizontal accent lines */}
-            <div className="absolute top-1/4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E37100]/30 to-transparent" />
-            <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E37100]/20 to-transparent" />
-            <div className="absolute top-3/4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E37100]/30 to-transparent" />
+            <div className="absolute top-1/4 left-0 right-0 h-px bg-linear-to-r from-transparent via-[#E37100]/30 to-transparent" />
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-linear-to-r from-transparent via-[#E37100]/20 to-transparent" />
+            <div className="absolute top-3/4 left-0 right-0 h-px bg-linear-to-r from-transparent via-[#E37100]/30 to-transparent" />
             {/* Subtle radial glow at center */}
             <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at center 70%, rgba(227, 113, 0, 0.08) 0%, transparent 50%)' }} />
           </div>

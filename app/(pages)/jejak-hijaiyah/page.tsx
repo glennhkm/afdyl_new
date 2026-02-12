@@ -1,14 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { hijaiyahLetters } from "@/lib/data/hijaiyah-letters";
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 import { useStudentProgress } from "@/contexts/StudentProgressContext";
+import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
 const HijaiyahTracingPage = () => {
   const router = useRouter();
   const { hijaiyahProgress, hasHijaiyahProgress } = useStudentProgress();
+  const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
+  
+  // Disable pull-to-refresh when component mounts (tracing game page)
+  useEffect(() => {
+    disablePullToRefresh();
+    return () => {
+      enablePullToRefresh();
+    };
+  }, [disablePullToRefresh, enablePullToRefresh]);
   
   const completedLetters = hijaiyahProgress.completedLetters || [];
   const lastCompletedIndex = completedLetters.length > 0 ? Math.max(...completedLetters) : -1;

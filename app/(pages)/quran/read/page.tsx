@@ -20,6 +20,7 @@ import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 import { QuranReadSkeleton } from "@/components/ui/Skeleton";
 import { useStudentProgress } from "@/contexts/StudentProgressContext";
+import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
 // Loading component for Suspense
 const ReadingPageLoading = () => <QuranReadSkeleton />;
@@ -154,6 +155,15 @@ SettingsModal.displayName = 'SettingsModal';
 const ReadingContent = () => {
   const searchParams = useSearchParams();
   const { quranProgress, markQuranProgress } = useStudentProgress();
+  const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
+
+  // Disable pull-to-refresh when component mounts (reading page with scroll)
+  useEffect(() => {
+    disablePullToRefresh();
+    return () => {
+      enablePullToRefresh();
+    };
+  }, [disablePullToRefresh, enablePullToRefresh]);
 
   // URL params
   const type = (searchParams.get("type") as "surah" | "juz") || "surah";

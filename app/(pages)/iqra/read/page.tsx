@@ -15,6 +15,7 @@ import {
 } from "@/lib/services/iqra-service";
 import { IqraReadSkeleton } from "@/components/ui/Skeleton";
 import { useStudentProgress } from "@/contexts/StudentProgressContext";
+import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
 // Loading component
 const LoadingSpinner = () => <IqraReadSkeleton />;
@@ -293,6 +294,15 @@ const IqraReadingContent = () => {
   const searchParams = useSearchParams();
   const volumeNumber = parseInt(searchParams.get("volume") || "1");
   const { iqraProgress, markIqraProgress } = useStudentProgress();
+  const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
+
+  // Disable pull-to-refresh when component mounts (reading page with scroll)
+  useEffect(() => {
+    disablePullToRefresh();
+    return () => {
+      enablePullToRefresh();
+    };
+  }, [disablePullToRefresh, enablePullToRefresh]);
 
   // State
   const [currentPage, setCurrentPage] = useState(1);

@@ -15,8 +15,19 @@ import {
   RecognitionStatus,
 } from "@/lib/services/speech-recognition-service";
 import { getTTSService } from "@/lib/services/tts-service";
+import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
 const LafalHijaiyahPage = () => {
+  const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
+
+  // Disable pull-to-refresh when component mounts (speech recording page)
+  useEffect(() => {
+    disablePullToRefresh();
+    return () => {
+      enablePullToRefresh();
+    };
+  }, [disablePullToRefresh, enablePullToRefresh]);
+
   // Current prompt state
   const [currentPrompt] = useState<LafalPrompt>(
     lafalPrompts[0],

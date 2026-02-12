@@ -7,6 +7,7 @@ import TracingCanvas, { TracingCanvasRef } from "@/components/hijaiyah/TracingCa
 import Icon from "@/components/Icon";
 import { hijaiyahLetters, audioMapping } from "@/lib/data/hijaiyah-letters";
 import { useStudentProgress } from "@/contexts/StudentProgressContext";
+import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
 interface FeedbackState {
   type: "success" | "error" | "warning" | null;
@@ -18,6 +19,15 @@ const HijaiyahTracingDetailPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { hijaiyahProgress, markHijaiyahCompleted } = useStudentProgress();
+  const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
+  
+  // Disable pull-to-refresh when component mounts (tracing canvas page)
+  useEffect(() => {
+    disablePullToRefresh();
+    return () => {
+      enablePullToRefresh();
+    };
+  }, [disablePullToRefresh, enablePullToRefresh]);
   
   const index = parseInt(params.index as string) || 0;
   const letterData = hijaiyahLetters[index] || hijaiyahLetters[0];

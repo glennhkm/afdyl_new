@@ -2,6 +2,9 @@
 
 import React, { useSyncExternalStore, useMemo } from "react";
 import InstallPrompt from "./InstallPrompt";
+import PullToRefresh from "./PullToRefresh";
+import ScrollToTopProvider from "@/components/ScrollToTopProvider";
+import { PullToRefreshProvider } from "@/contexts/PullToRefreshContext";
 
 interface PWAProviderProps {
   children: React.ReactNode;
@@ -81,10 +84,21 @@ const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
     );
   }
 
+  // Wrap content with ScrollToTopProvider and PullToRefresh
+  const content = (
+    <PullToRefreshProvider>
+      <ScrollToTopProvider>
+        <PullToRefresh>
+          {children}
+        </PullToRefresh>
+      </ScrollToTopProvider>
+    </PullToRefreshProvider>
+  );
+
   return (
     <>
       {showInstallPrompt && <InstallPrompt />}
-      {!showInstallPrompt && children}
+      {!showInstallPrompt && content}
     </>
   );
 };
