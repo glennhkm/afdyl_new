@@ -889,9 +889,6 @@ const TangkapHijaiyahGame = () => {
     };
   }, [stopCamera]);
 
-  // Check if game is active
-  const isGameActive =
-    gameState.status === "playing" || gameState.status === "paused" || gameState.status === "countdown";
 
   return (
     <div className="w-full min-h-screen bg-[#FDFFF2] overflow-hidden relative">
@@ -1021,7 +1018,7 @@ const TangkapHijaiyahGame = () => {
       {(gameState.status === "playing" || gameState.status === "paused" || gameState.status === "gameover") && (
         <div
           ref={gameContainerRef}
-          className="relative w-full h-[calc(100vh-128px)] overflow-hidden"
+          className="fixed inset-0 left-0 top-20 sm:top-24 md:top-28 lg:top-32 w-screen h-[calc(100vh-60px)] md:h-[calc(100vh-128px)] overflow-hidden"
         >
           {/* Neutral game area background with grid */}
           <div className="absolute inset-0 bg-linear-to-b from-[#2a3a4a] to-[#1a2a3a] z-0">
@@ -1067,7 +1064,7 @@ const TangkapHijaiyahGame = () => {
             return (
               <div
                 key={card.id}
-                className="absolute transition-transform duration-75 z-[5]"
+                className="absolute transition-transform duration-75 z-5"
                 style={{
                   left: getLaneCenter(card.lane),
                   top: card.y,
@@ -1075,7 +1072,7 @@ const TangkapHijaiyahGame = () => {
                 }}
               >
                 <div
-                  className="flex flex-col items-center justify-center  w-24 h-24 md:w-34 md:h-34 rounded-2xl shadow-xl border-4 border-white/50"
+                  className="flex flex-col items-center justify-center w-24 h-24 md:w-34 md:h-34 rounded-2xl shadow-xl border-4 border-white/50"
                   style={{
                     backgroundColor: LANE_COLORS[card.lane],
                   }}
