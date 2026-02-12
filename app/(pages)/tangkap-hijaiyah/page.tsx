@@ -21,7 +21,9 @@ import {
 const GAME_CONFIG = {
   LANES: 3,
   INITIAL_FALL_SPEED: 2.5,
+  INITIAL_FALL_SPEED_MOBILE: 6.0, // Faster on mobile
   SPEED_INCREMENT: 0.3,
+  SPEED_INCREMENT_MOBILE: 0.5, // Faster increment on mobile
   CARD_WIDTH: 136,
   CARD_HEIGHT: 136,
   SPAWN_INTERVAL_INITIAL: 500,
@@ -32,6 +34,7 @@ const GAME_CONFIG = {
   POINTS_CORRECT: 10,
   POINTS_WRONG: -5,
   COMBO_MULTIPLIER: 1.5,
+  MOBILE_BREAKPOINT: 1024, // Width threshold for tablet
 } as const;
 
 // Lane colors - matched to project theme
@@ -399,7 +402,11 @@ const TangkapHijaiyahGame = () => {
     // Shuffle positions (0, 1, 2) instead of cards themselves to preserve isTarget
     const positions = shuffleArray([0, 1, 2]);
 
-    const speed = GAME_CONFIG.INITIAL_FALL_SPEED + (gameState.level - 1) * GAME_CONFIG.SPEED_INCREMENT;
+    // Use faster speed on mobile devices
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < GAME_CONFIG.MOBILE_BREAKPOINT;
+    const baseSpeed = isMobile ? GAME_CONFIG.INITIAL_FALL_SPEED_MOBILE : GAME_CONFIG.INITIAL_FALL_SPEED;
+    const speedIncrement = isMobile ? GAME_CONFIG.SPEED_INCREMENT_MOBILE : GAME_CONFIG.SPEED_INCREMENT;
+    const speed = baseSpeed + (gameState.level - 1) * speedIncrement;
 
     // Generate unique round ID to prevent duplicate rounds
     const roundId = `round-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -877,12 +884,10 @@ const TangkapHijaiyahGame = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#FDFFF2] overflow-hidden relative">
-      {/* Video element - always in DOM */}
+      {/* Video element - hidden but still active for detection */}
       <video
         ref={videoRef}
-        className={`fixed inset-x-0 w-full object-cover transition-opacity duration-300 ${
-          isGameActive ? "opacity-100 z-0 top-0 h-[calc(100vh)]" : "opacity-0 pointer-events-none -z-10 top-0 h-full"
-        }`}
+        className="fixed opacity-0 pointer-events-none -z-10 top-0 left-0 w-full h-full object-cover"
         playsInline
         muted
         autoPlay
@@ -893,8 +898,6 @@ const TangkapHijaiyahGame = () => {
 
       <Topbar
         title="Tangkap Hijaiyah"
-        textColor={gameState.status === "menu" ? "text-black" : "text-background"}
-        isTransparentBg={gameState.status === "menu" ? false : true}
         onBackClick={() => {
           endGame();
           router.back();
@@ -970,13 +973,27 @@ const TangkapHijaiyahGame = () => {
       {/* ========== COUNTDOWN SCREEN ========== */}
       {gameState.status === "countdown" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden" style={{ top: "0px" }}>
+          {/* Neutral game area background with grid */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#2a3a4a] to-[#1a2a3a]">
+            {/* Grid pattern */}
+            <div 
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
+                `,
+                backgroundSize: '50px 50px'
+              }}
+            />
+            {/* Subtle radial glow */}
+            <div className="absolute inset-0 bg-gradient-radial from-[#E37100]/10 via-transparent to-transparent" style={{ background: 'radial-gradient(circle at center, rgba(227, 113, 0, 0.1) 0%, transparent 70%)' }} />
+          </div>
           {/* Hand skeleton overlay - no CSS mirror since drawHandSkeleton handles it */}
           <canvas
             ref={overlayCanvasRef}
-            className="absolute inset-0 w-full h-full pointer-events-none"
+            className="absolute inset-0 w-full h-full pointer-events-none z-10"
           />
-          {/* Dark overlay */}
-          <div className="absolute inset-0 bg-black/40" />
           <div className="text-center z-10">
             <div className="text-8xl sm:text-9xl font-bold text-[#E37100] animate-ping">{countdown}</div>
             <p className="text-white/80 mt-4 text-lg">Bersiap-siap!</p>
@@ -995,21 +1012,39 @@ const TangkapHijaiyahGame = () => {
           ref={gameContainerRef}
           className="relative w-full h-[calc(100vh-128px)] overflow-hidden"
         >
+          {/* Neutral game area background with grid */}
+          <div className="absolute inset-0 bg-linear-to-b from-[#2a3a4a] to-[#1a2a3a] z-0">
+            {/* Grid pattern */}
+            <div 
+              className="absolute inset-0 opacity-30"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(255,255,255,0.08) 1px, transparent 1px)
+                `,
+                backgroundSize: '60px 60px'
+              }}
+            />
+            {/* Horizontal accent lines */}
+            <div className="absolute top-1/4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E37100]/30 to-transparent" />
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E37100]/20 to-transparent" />
+            <div className="absolute top-3/4 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E37100]/30 to-transparent" />
+            {/* Subtle radial glow at center */}
+            <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at center 70%, rgba(227, 113, 0, 0.08) 0%, transparent 50%)' }} />
+          </div>
+
           {/* Hand skeleton overlay - no CSS mirror since drawHandSkeleton handles it */}
           <canvas
             ref={overlayCanvasRef}
             className="absolute inset-0 w-full h-full pointer-events-none z-10"
           />
 
-          {/* Subtle overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 z-[2]" />
-
           {/* Lane Dividers */}
           <div className="absolute inset-0 flex pointer-events-none z-[3]">
             {Array.from({ length: GAME_CONFIG.LANES - 1 }).map((_, i) => (
               <div
                 key={i}
-                className="absolute top-0 bottom-0 w-1 bg-white/30"
+                className="absolute top-0 bottom-0 w-0.5 bg-white/20"
                 style={{ left: `${((i + 1) * 100) / GAME_CONFIG.LANES}%` }}
               />
             ))}
@@ -1029,14 +1064,12 @@ const TangkapHijaiyahGame = () => {
                 }}
               >
                 <div
-                  className="flex flex-col items-center justify-center rounded-2xl shadow-xl border-4 border-white/50"
+                  className="flex flex-col items-center justify-center  w-24 h-24 md:w-34 md:h-34 rounded-2xl shadow-xl border-4 border-white/50"
                   style={{
-                    width: GAME_CONFIG.CARD_WIDTH,
-                    height: GAME_CONFIG.CARD_HEIGHT,
                     backgroundColor: LANE_COLORS[card.lane],
                   }}
                 >
-                  <span className="text-4xl sm:text-3xl font-arabic font-bold text-white drop-shadow-lg">
+                  <span className="text-2xl sm:text-3xl font-arabic font-bold text-white drop-shadow-lg">
                     {card.letter}
                   </span>
                   <span className="text-base text-white/80 mt-1 capitalize">{card.name}</span>
