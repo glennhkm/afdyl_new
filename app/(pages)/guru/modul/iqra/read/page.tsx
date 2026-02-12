@@ -51,7 +51,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 w-screen h-screen"
       onClick={onClose}
     >
       <div
@@ -270,6 +270,18 @@ const TeacherIqraReadingContent = () => {
   const [showMarkConfirm, setShowMarkConfirm] = useState(false);
   const [markedSuccess, setMarkedSuccess] = useState(false);
 
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (isModalOpen || showSettings || showMarkConfirm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen, showSettings, showMarkConfirm]);
+
   // Redirect if no student
   useEffect(() => {
     if (!currentRoom || !currentStudent) {
@@ -402,18 +414,6 @@ const TeacherIqraReadingContent = () => {
       <Topbar
         title={volumeTitle}
         onBackClick={() => router.push("/guru/modul/iqra")}
-        actionButton={
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 lg:p-3 flex items-center justify-center rounded-full bg-brown-brand cursor-pointer hover:opacity-90 duration-200 shadow-lg"
-          >
-            <Icon
-              name="RiSettings3Line"
-              color="white"
-              className="w-6 lg:w-8 h-6 lg:h-8"
-            />
-          </button>
-        }
       />
 
       {/* Student Banner */}
@@ -446,7 +446,7 @@ const TeacherIqraReadingContent = () => {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl sm:text-3xl font-arabic text-brown-brand">
+              <p className="text-2xl sm:text-3xl font-arabic text-black">
                 {pageData.topic.arab}
               </p>
             </div>
@@ -660,45 +660,7 @@ const TeacherIqraReadingContent = () => {
         onClose={handleCloseModal}
         isPlaying={isPlaying}
         onPlayAudio={handlePlayAudio}
-      />
-
-      {/* Settings Panel */}
-      {showSettings && (
-        <div
-          className="fixed inset-0 bg-black/30 flex items-start justify-end z-40 pt-32"
-          onClick={() => setShowSettings(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-xl m-4 p-6 w-72"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Pengaturan
-            </h3>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-700">Sorotan Baris Pertama</span>
-                <button
-                  onClick={toggleHighlights}
-                  className={`
-                    relative w-14 h-8 rounded-full transition-colors duration-200
-                    ${highlightsOn ? "bg-brown-brand" : "bg-gray-300"}
-                  `}
-                >
-                  <div
-                    className={`
-                      absolute top-1 w-6 h-6 bg-white rounded-full shadow-md
-                      transition-transform duration-200
-                      ${highlightsOn ? "translate-x-7" : "translate-x-1"}
-                    `}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      />      
     </div>
   );
 };

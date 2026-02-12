@@ -40,7 +40,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 w-screen h-screen"
       onClick={onClose}
     >
       <div
@@ -119,7 +119,6 @@ const OrderModal: React.FC<OrderModalProps> = ({
 interface IqraCellProps {
   row: IqraRow;
   isFirstRow: boolean;
-  highlightsOn: boolean;
   onOrderClick: (row: IqraRow) => void;
   onRowAudioClick: (row: IqraRow) => void;
   isRowPlaying: boolean;
@@ -127,8 +126,6 @@ interface IqraCellProps {
 
 const IqraCell: React.FC<IqraCellProps> = ({
   row,
-  isFirstRow,
-  highlightsOn,
   onOrderClick,
   onRowAudioClick,
   isRowPlaying,
@@ -136,9 +133,7 @@ const IqraCell: React.FC<IqraCellProps> = ({
   return (
     <div 
       className={`
-        flex flex-col items-center py-2 sm:py-3 px-1 sm:px-2
-        ${isFirstRow && highlightsOn ? 'bg-amber-50/50 rounded-lg' : ''}
-      `}
+        flex flex-col items-center py-2 sm:py-3 px-1 sm:px-2`}
     >
       {/* Order number */}
       <div className="text-xs text-gray-400 font-medium mb-1">
@@ -152,8 +147,7 @@ const IqraCell: React.FC<IqraCellProps> = ({
           flex flex-wrap items-center justify-center gap-1
           py-1 px-2 rounded-lg transition-all duration-200
           hover:bg-white/60 hover:scale-[1.02] active:scale-[0.98]
-          cursor-pointer
-          ${isFirstRow && highlightsOn ? 'text-brown-brand' : 'text-gray-800'}
+          cursor-pointer text-gray-800
         `}
         dir="rtl"
       >
@@ -194,7 +188,6 @@ const IqraCell: React.FC<IqraCellProps> = ({
 interface IqraGridRowProps {
   rows: IqraRow[];  // Array of 3 (or fewer) rows
   rowGroupIndex: number;
-  highlightsOn: boolean;
   onOrderClick: (row: IqraRow) => void;
   onRowAudioClick: (row: IqraRow) => void;
   playingRowId: number | null;
@@ -203,7 +196,6 @@ interface IqraGridRowProps {
 const IqraGridRow: React.FC<IqraGridRowProps> = ({
   rows,
   rowGroupIndex,
-  highlightsOn,
   onOrderClick,
   onRowAudioClick,
   playingRowId,
@@ -222,7 +214,6 @@ const IqraGridRow: React.FC<IqraGridRowProps> = ({
           key={row.order_id}
           row={row}
           isFirstRow={row.order_id === 1}
-          highlightsOn={highlightsOn}
           onOrderClick={onOrderClick}
           onRowAudioClick={onRowAudioClick}
           isRowPlaying={playingRowId === row.order_id}
@@ -236,58 +227,6 @@ const IqraGridRow: React.FC<IqraGridRowProps> = ({
   );
 };
 
-// Settings Panel Component
-interface SettingsPanelProps {
-  isOpen: boolean;
-  onClose: () => void;
-  highlightsOn: boolean;
-  onToggleHighlights: () => void;
-}
-
-const SettingsPanel: React.FC<SettingsPanelProps> = ({
-  isOpen,
-  onClose,
-  highlightsOn,
-  onToggleHighlights,
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/30 flex items-start justify-end z-40 pt-32"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-xl m-4 p-6 w-72"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Pengaturan</h3>
-        
-        <div className="space-y-4">
-          {/* Highlights Toggle */}
-          <div className="flex items-center justify-between">
-            <span className="text-gray-700">Sorotan Baris Pertama</span>
-            <button
-              onClick={onToggleHighlights}
-              className={`
-                relative w-14 h-8 rounded-full transition-colors duration-200
-                ${highlightsOn ? 'bg-brown-brand' : 'bg-gray-300'}
-              `}
-            >
-              <div
-                className={`
-                  absolute top-1 w-6 h-6 bg-white rounded-full shadow-md
-                  transition-transform duration-200
-                  ${highlightsOn ? 'translate-x-7' : 'translate-x-1'}
-                `}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Main Reading Content Component
 const IqraReadingContent = () => {
@@ -309,7 +248,6 @@ const IqraReadingContent = () => {
   const [pageData, setPageData] = useState<IqraPage | null>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [volumeTitle, setVolumeTitle] = useState("");
-  const [highlightsOn, setHighlightsOn] = useState(true);
   const [selectedRow, setSelectedRow] = useState<IqraRow | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -318,6 +256,18 @@ const IqraReadingContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showMarkConfirm, setShowMarkConfirm] = useState(false);
   const [markedSuccess, setMarkedSuccess] = useState(false);
+
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (isModalOpen || showSettings || showMarkConfirm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen, showSettings, showMarkConfirm]);
 
   // Load volume data
   useEffect(() => {
@@ -405,12 +355,7 @@ const IqraReadingContent = () => {
       setCurrentPage((prev) => prev - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [currentPage]);
-
-  // Toggle highlights
-  const toggleHighlights = useCallback(() => {
-    setHighlightsOn((prev) => !prev);
-  }, []);
+  }, [currentPage]);  
 
   // Mark progress handler
   const handleMarkProgress = useCallback(() => {
@@ -424,23 +369,13 @@ const IqraReadingContent = () => {
   const isMarkedPage = iqraProgress.currentJilid === volumeNumber && 
                        iqraProgress.currentPage === currentPage;
 
-  // Settings button for topbar
-  const settingsButton = (
-    <button
-      onClick={() => setShowSettings(true)}
-      className="p-2 lg:p-3 flex items-center justify-center rounded-full bg-brown-brand cursor-pointer hover:opacity-90 duration-200 shadow-lg"
-    >
-      <Icon name="RiSettings3Line" color="white" className="w-6 lg:w-8 h-6 lg:h-8" />
-    </button>
-  );
-
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
   return (
     <div className="w-full min-h-[82svh] pb-24">
-      <Topbar title={volumeTitle} actionButton={settingsButton} />
+      <Topbar title={volumeTitle} />
 
       {/* Page Topic Header */}
       {pageData?.topic && (
@@ -451,7 +386,7 @@ const IqraReadingContent = () => {
               <p className="text-lg sm:text-xl font-bold text-brown-brand">{pageData.topic.latin}</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl sm:text-3xl font-arabic text-tertiary-orange">
+              <p className="text-2xl sm:text-3xl font-arabic text-black">
                 {pageData.topic.arab}
               </p>
             </div>
@@ -481,7 +416,7 @@ const IqraReadingContent = () => {
       )}
 
       {/* Highlights Toggle */}
-      <div className="flex items-center gap-3 mb-4">
+      {/* <div className="flex items-center gap-3 mb-4">
         <span className="text-gray-800 font-semibold text-sm sm:text-base">
           Highlights {highlightsOn ? "On" : "Off"}
         </span>
@@ -500,7 +435,7 @@ const IqraReadingContent = () => {
             `}
           />
         </button>
-      </div>
+      </div> */}
 
       {/* Iqra Content - 3 columns per row, RTL order (smallest on right) */}
       {pageData && pageData.rows && (
@@ -515,7 +450,6 @@ const IqraReadingContent = () => {
                   key={groupIndex}
                   rows={rowGroup}
                   rowGroupIndex={groupIndex}
-                  highlightsOn={highlightsOn}
                   onOrderClick={handleOrderClick}
                   onRowAudioClick={handleRowAudioClick}
                   playingRowId={playingRowId}
@@ -649,13 +583,6 @@ const IqraReadingContent = () => {
         onPlayAudio={handlePlayAudio}
       />
 
-      {/* Settings Panel */}
-      <SettingsPanel
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        highlightsOn={highlightsOn}
-        onToggleHighlights={toggleHighlights}
-      />
     </div>
   );
 };

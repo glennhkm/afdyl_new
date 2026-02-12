@@ -46,6 +46,18 @@ const HijaiyahTracingDetailPage = () => {
   const [feedback, setFeedback] = useState<FeedbackState>({ type: null, message: "" });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  // Lock body scroll when success modal is open
+  useEffect(() => {
+    if (showSuccessModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showSuccessModal]);
+
   // Handle reset
   const handleReset = useCallback(() => {
     canvasRef.current?.resetTracing();

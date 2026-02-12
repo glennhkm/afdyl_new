@@ -40,6 +40,18 @@ const TeacherHijaiyahTracingDetailPage = () => {
   const [feedback, setFeedback] = useState<FeedbackState>({ type: null, message: "" });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  // Lock body scroll when success modal is open
+  useEffect(() => {
+    if (showSuccessModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showSuccessModal]);
+
   // Redirect if no student
   useEffect(() => {
     if (!currentRoom || !currentStudent) {

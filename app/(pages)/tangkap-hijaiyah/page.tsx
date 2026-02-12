@@ -281,6 +281,18 @@ const TangkapHijaiyahGame = () => {
     }
   }, [gameState.status]);
 
+  // Lock body scroll when game is active or any overlay is shown
+  useEffect(() => {
+    if (gameState.status !== "menu") {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [gameState.status]);
+
   // Initialize dimensions on mount (client-side only)
   useEffect(() => {
     setGameWidth(window.innerWidth);
@@ -1405,19 +1417,6 @@ const TangkapHijaiyahGame = () => {
               <Icon name="RiVolumeUpFill" className="w-6 h-6 text-white" />
             </button>
           )}
-
-          {/* Controls
-          <div className="absolute top-1/2 right-2 sm:right-4 -translate-y-1/2 flex flex-col gap-2 z-20">
-            <button
-              onClick={togglePause}
-              className="bg-[#BE9D77]/80 backdrop-blur-sm p-2 sm:p-3 rounded-full hover:bg-[#BE9D77] transition shadow-lg"
-            >
-              <Icon
-                name={gameState.status === "paused" ? "RiPlayFill" : "RiPauseFill"}
-                className="w-5 h-5 sm:w-6 sm:h-6 text-white"
-              />
-            </button>
-          </div> */}
 
           {/* Pause Overlay */}
           {gameState.status === "paused" && (

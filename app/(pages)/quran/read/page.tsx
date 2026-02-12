@@ -193,6 +193,18 @@ const ReadingContent = () => {
   const [showMarkConfirm, setShowMarkConfirm] = useState(false);
   const [markedSuccess, setMarkedSuccess] = useState(false);
 
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (showMarkConfirm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMarkConfirm]);
+
   // Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ayahRefs = useRef<(HTMLDivElement | null)[]>([]);

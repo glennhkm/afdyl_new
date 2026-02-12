@@ -199,6 +199,18 @@ const ReadingContent = () => {
   const [showMarkConfirm, setShowMarkConfirm] = useState(false);
   const [markedSuccess, setMarkedSuccess] = useState(false);
 
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (showMarkConfirm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMarkConfirm]);
+
   // Get progress directly from currentStudent
   const quranProgress = currentStudent?.quranProgress;
 

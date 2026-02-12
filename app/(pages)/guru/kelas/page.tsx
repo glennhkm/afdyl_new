@@ -33,6 +33,18 @@ const RoomManagementPage = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
+  // Lock body scroll when delete confirmation modal is open
+  useEffect(() => {
+    if (showDeleteConfirm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showDeleteConfirm]);
+
   // Redirect if no room is active
   useEffect(() => {
     if (!isLoading && !currentRoom) {

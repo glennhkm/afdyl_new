@@ -35,6 +35,18 @@ const TebakHijaiyahPage = () => {
   const [isGameCompleted, setIsGameCompleted] = useState(false);
   const [centerCardIndex, setCenterCardIndex] = useState(2);
   
+  // Lock body scroll when game completed modal is open
+  useEffect(() => {
+    if (isGameCompleted) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isGameCompleted]);
+  
   // UI state
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [feedback, setFeedback] = useState<{ show: boolean; isCorrect: boolean; message: string }>({
