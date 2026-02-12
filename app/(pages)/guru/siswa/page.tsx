@@ -53,7 +53,6 @@ const StudentDashboardPage = () => {
     {
       id: "quran",
       title: "Al-Qur'an",
-      description: "Baca dan pelajari Al-Qur'an",
       icon: "RiBookOpenLine",
       url: "/guru/modul/quran",
       progress: hasQuranProgress
@@ -63,7 +62,6 @@ const StudentDashboardPage = () => {
     {
       id: "iqra",
       title: "Iqra'",
-      description: "Belajar membaca huruf hijaiyah",
       icon: "RiFileTextLine",
       url: "/guru/modul/iqra",
       progress: hasIqraProgress
@@ -73,7 +71,6 @@ const StudentDashboardPage = () => {
     {
       id: "jejak-hijaiyah",
       title: "Jejak Hijaiyah",
-      description: "Latih menulis huruf hijaiyah",
       icon: "RiEditLine",
       url: "/guru/modul/jejak-hijaiyah",
       progress: hijaiyahProgress.completedLetters.length > 0
@@ -83,14 +80,17 @@ const StudentDashboardPage = () => {
     {
       id: "tebak-hijaiyah",
       title: "Tebak Hijaiyah",
-      description: "Permainan mengenal hijaiyah",
       icon: "RiGamepadLine",
       url: "/tebak-hijaiyah",
     },
     {
+      title: "Tangkap Hijaiyah",
+      url: "/tangkap-hijaiyah",
+      icon: "RiCameraLine",
+    },
+    {
       id: "lafal-hijaiyah",
       title: "Latihan Lafal",
-      description: "Latih pelafalan huruf hijaiyah",
       icon: "RiMicLine",
       url: "/lafal-hijaiyah",
     },
@@ -154,7 +154,7 @@ const StudentDashboardPage = () => {
           <button
             key={module.id}
             onClick={() => router.push(module.url)}
-            className="h-36 sm:h-44 md:h-48 lg:h-52 bg-background-2 rounded-xl shadow cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 hover:-translate-y-1 duration-200 hover:border-2 hover:border-brown-brand group"
+            className="relative h-36 sm:h-44 md:h-48 lg:h-52 bg-background-2 rounded-3xl shadow cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 hover:-translate-y-1 duration-200 border-2 border-brown-brand/50 hover:border-brown-brand group"
           >
             <Icon
               name={module.icon as keyof typeof import('@remixicon/react')}
@@ -163,9 +163,6 @@ const StudentDashboardPage = () => {
             <h2 className="text-base sm:text-lg md:text-xl lg:text-3xl font-semibold text-gray-800 text-center leading-tight">
               {module.title}
             </h2>
-            <p className="text-xs sm:text-sm text-gray-500 text-center px-1 sm:px-2 md:px-4 line-clamp-2">
-              {module.description}
-            </p>
             {module.progress && (
               <div className="flex items-center gap-1 text-xs text-[#E37100]">
                 <Icon name="RiCheckboxCircleFill" className="w-3.5 h-3.5" />

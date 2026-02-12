@@ -1,12 +1,8 @@
 {
-  "level_id": 1,
+  "level_id": "6-1",
   "level_title": "Iqro 6 - Halaman 1",
-  "page_number": 1,
-  "topic": {
-    "latin": "Idgham Bighunnah - Nun Sukun/Tanwin meets Waw",
-    "arab": "إدغام بغنة - نون ساكنة/تنوين تلتقي واو"
-  },
-  "instruction_id": "Masuk dengan dengung. Nun sukun atau tanwin bertemu huruf Waw (و) ditekan dan ditahan 2 harakat.",
+  "topic": "Idgham Bighunnah - Nun Sukun/Tanwin meets Waw",
+  "instruction": "Masuk dengan dengung. Nun sukun atau tanwin bertemu huruf Waw (و) ditekan dan ditahan 2 harakat.",
   "content": [
     { "order_id": 1, "latin": "wālidihi", "arabic": "وَالِدِهِ" },
     { "order_id": 2, "latin": "ʿan", "arabic": "عَنْ" },

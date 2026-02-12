@@ -9,7 +9,6 @@ interface MenuItem {
   title: string;
   url: string;
   icon: string;
-  description: string;
   progress?: string | null;
 }
 
@@ -28,7 +27,6 @@ const ClientPage = () => {
       title: "Al-Qur'an",
       url: "/quran",
       icon: "RiBookOpenLine",
-      description: "Baca dan pelajari Al-Qur'an",
       progress: hasQuranProgress 
         ? `Terakhir: ${quranProgress.lastSurahName} Ayat ${quranProgress.lastAyah}` 
         : null,
@@ -37,7 +35,6 @@ const ClientPage = () => {
       title: "Iqra'",
       url: "/iqra",
       icon: "RiFileTextLine",
-      description: "Belajar membaca huruf hijaiyah",
       progress: hasIqraProgress 
         ? `Terakhir: Jilid ${iqraProgress.currentJilid} Hal. ${iqraProgress.currentPage}` 
         : null,
@@ -46,7 +43,6 @@ const ClientPage = () => {
       title: "Jejak Hijaiyah",
       url: "/jejak-hijaiyah",
       icon: "RiEditLine",
-      description: "Latih menulis huruf hijaiyah",
       progress: hasHijaiyahProgress 
         ? `${hijaiyahProgress.completedLetters.length}/29 huruf selesai` 
         : null,
@@ -55,31 +51,28 @@ const ClientPage = () => {
       title: "Tebak Hijaiyah",
       url: "/tebak-hijaiyah",
       icon: "RiGamepadLine",
-      description: "Permainan mengenal hijaiyah",
     },
     {
       title: "Tangkap Hijaiyah",
       url: "/tangkap-hijaiyah",
       icon: "RiCameraLine",
-      description: "Tangkap huruf dengan gerakan tubuh",
     },
     {
       title: "Latihan Lafal",
       url: "/lafal-hijaiyah",
       icon: "RiMicLine",
-      description: "Latih pelafalan huruf hijaiyah",
     },
   ];
 
   return (
-    <div className="w-full h-full overflow-x-hidden pt-4">
+    <div className="w-full h-full overflow-x-hidden py-4">
       <Topbar title="Yuk Belajar!" />
       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {menu.map((item, index) => (
           <Link
             key={index}
             href={item.url}
-            className="relative h-36 sm:h-44 md:h-48 lg:h-52 bg-background-2 rounded-xl shadow cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 hover:-translate-y-1 duration-200 hover:border-2 hover:border-brown-brand group"
+            className="relative h-36 sm:h-44 md:h-48 lg:h-52 bg-background-2 rounded-3xl shadow cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 hover:-translate-y-1 duration-200 border-2 border-brown-brand/50 hover:border-brown-brand group"
           >
             {/* Progress Badge */}
             {item.progress && (
@@ -96,9 +89,6 @@ const ClientPage = () => {
             <h2 className="text-base sm:text-lg md:text-xl lg:text-3xl font-semibold text-gray-800 text-center leading-tight">
               {item.title}
             </h2>
-            <p className="text-xs sm:text-sm text-gray-500 text-center px-1 sm:px-2 md:px-4 line-clamp-2">
-              {item.description}
-            </p>
             {/* Progress text on mobile */}
             {item.progress && (
               <p className="sm:hidden text-[10px] text-emerald-600 text-center px-1">

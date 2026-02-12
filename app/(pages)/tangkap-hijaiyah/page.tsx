@@ -5,38 +5,43 @@ import { useRouter } from "next/navigation";
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 import { hijaiyahGameLetters, shuffleArray } from "@/lib/data/hijaiyah-game-data";
-import { 
-  trackPlayer, 
-  drawTrackingOverlay, 
-  resetTracking,
-  TrackingResult 
-} from "@/lib/services/face-tracking-service-v2";
+import {
+  initializeHandTracking,
+  detectHands,
+  drawHandSkeleton,
+  checkHandCollision,
+  resetHandTracking,
+  cleanupHandTracking,
+  HandTrackingResult,
+} from "@/lib/services/hand-tracking-service";
 
 // ============================================
 // GAME CONFIGURATION
 // ============================================
 const GAME_CONFIG = {
   LANES: 3,
-  INITIAL_FALL_SPEED: 3,
-  SPEED_INCREMENT: 0.5,
-  LETTER_SIZE: 80,
-  SPAWN_INTERVAL_INITIAL: 2200,
-  SPAWN_INTERVAL_MIN: 1200,
-  CATCH_ZONE_HEIGHT: 100,
+  INITIAL_FALL_SPEED: 2.5,
+  SPEED_INCREMENT: 0.3,
+  CARD_WIDTH: 136,
+  CARD_HEIGHT: 136,
+  SPAWN_INTERVAL_INITIAL: 500,
+  SPAWN_INTERVAL_MIN: 500,
+  ROUND_DELAY: 2000, // 2 second delay between rounds
   LIVES: 3,
-  LETTERS_PER_LEVEL: 5,
-  POINTS_PER_CATCH: 10,
+  ROUNDS_PER_LEVEL: 5,
+  POINTS_CORRECT: 10,
+  POINTS_WRONG: -5,
   COMBO_MULTIPLIER: 1.5,
 } as const;
 
 // Lane colors - matched to project theme
-const LANE_COLORS = ["#BE9D77", "#E37100", "#EDDD6E"]; // brown-brand, tertiary-orange, secondary-gold
+const LANE_COLORS = ["#E37100", "#E37100", "#E37100"];
 const LANE_LABELS = ["Kiri", "Tengah", "Kanan"];
 
 // ============================================
 // TYPES
 // ============================================
-interface FallingLetter {
+interface FallingCard {
   id: string;
   letter: string;
   name: string;
@@ -44,8 +49,17 @@ interface FallingLetter {
   lane: number;
   y: number;
   speed: number;
+  isTarget: boolean;
   caught: boolean;
   missed: boolean;
+}
+
+interface GameRound {
+  targetLetter: string;
+  targetName: string;
+  targetAudio: string;
+  cards: FallingCard[];
+  isActive: boolean;
 }
 
 interface GameState {
@@ -53,14 +67,15 @@ interface GameState {
   score: number;
   lives: number;
   level: number;
-  lettersCaught: number;
+  roundsCompleted: number;
   combo: number;
   highScore: number;
 }
 
 interface CatchEffect {
   id: string;
-  lane: number;
+  x: number;
+  y: number;
   success: boolean;
   letter: string;
 }
@@ -98,110 +113,198 @@ ScoreDisplay.displayName = "ScoreDisplay";
 
 const CatchEffectComponent = React.memo(({ effect }: { effect: CatchEffect }) => (
   <div
-    className={`absolute bottom-24 z-20 pointer-events-none animate-bounce-up
-      ${effect.lane === 0 ? "left-[16.67%] -translate-x-1/2" : ""}
-      ${effect.lane === 1 ? "left-1/2 -translate-x-1/2" : ""}
-      ${effect.lane === 2 ? "left-[83.33%] -translate-x-1/2" : ""}
-    `}
+    className="absolute z-30 pointer-events-none animate-bounce-up"
+    style={{
+      left: effect.x,
+      top: effect.y,
+      transform: "translateX(-50%)",
+    }}
   >
-    <div className={`text-4xl font-bold drop-shadow-lg ${effect.success ? "text-[#14AE5C]" : "text-red-500"}`}>
-      {effect.success ? `+${GAME_CONFIG.POINTS_PER_CATCH}` : "Miss!"}
+    <div className={`text-4xl sm:text-6xl font-bold drop-shadow-lg ${effect.success ? "text-[#14AE5C]" : "text-red-500"}`}>
+      {effect.success ? `+${GAME_CONFIG.POINTS_CORRECT}` : "Salah!"}
     </div>
   </div>
 ));
 CatchEffectComponent.displayName = "CatchEffectComponent";
+
+// Target Letter Display Component
+const TargetLetterDisplay = React.memo(({ letter, name }: { letter: string; name: string }) => (
+  <div className="bg-gradient-to-br absolute top-0 left-1/2 -translate-x-1/2 from-[#E37100] to-[#BE9D77] rounded-b-2xl p-4 shadow-2xl border-4 border-white/50 w-1/3">
+    <div className="text-center">
+      <p className="text-white/80 text-xs sm:text-sm">Tangkap huruf:</p>
+      <span className="text-2xl font-arabic font-bold text-white drop-shadow-lg">
+        {letter}
+      </span>
+      <p className="text-white font-semibold text-sm sm:text-base mt-1 capitalize">{name}</p>
+    </div>
+  </div>
+));
+TargetLetterDisplay.displayName = "TargetLetterDisplay";
 
 // ============================================
 // MAIN GAME COMPONENT
 // ============================================
 const TangkapHijaiyahGame = () => {
   const router = useRouter();
-  
+
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>(0);
   const lastSpawnTimeRef = useRef<number>(0);
+  const roundEndTimeRef = useRef<number>(0); // Track when round ended for delay
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const gameContainerRef = useRef<HTMLDivElement>(null);
   
+  // CRITICAL: Spawn guard to prevent multiple spawn calls (race condition fix)
+  const isSpawningRef = useRef<boolean>(false);
+  const currentRoundIdRef = useRef<string>(""); // Track current round ID to prevent duplicates
+
   // Letter queue
   const lettersQueueRef = useRef<typeof hijaiyahGameLetters>([]);
   const letterIndexRef = useRef(0);
-  const lastLaneRef = useRef(-1);
-  
+
+  // Refs for game loop (to avoid recreating gameLoop callback)
+  const gameStateRef = useRef<GameState | null>(null);
+  const currentRoundRef = useRef<GameRound | null>(null);
+  const handResultRef = useRef<HandTrackingResult | null>(null);
+  const gameDimensionsRef = useRef({ 
+    width: typeof window !== 'undefined' ? window.innerWidth : 400, 
+    height: typeof window !== 'undefined' ? window.innerHeight - 200 : 600 
+  });
+
   // State
   const [gameState, setGameState] = useState<GameState>({
     status: "menu",
     score: 0,
     lives: GAME_CONFIG.LIVES,
     level: 1,
-    lettersCaught: 0,
+    roundsCompleted: 0,
     combo: 0,
     highScore: 0,
   });
-  
-  const [fallingLetters, setFallingLetters] = useState<FallingLetter[]>([]);
-  const [playerLane, setPlayerLane] = useState(1);
-  const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
+
+  const [currentRound, setCurrentRound] = useState<GameRound | null>(null);
+  const [handResult, setHandResult] = useState<HandTrackingResult | null>(null);
   const [countdown, setCountdown] = useState(3);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [currentLetterName, setCurrentLetterName] = useState("");
   const [catchEffects, setCatchEffects] = useState<CatchEffect[]>([]);
-  const [gameHeight, setGameHeight] = useState(600);
-  
-  // Overlay canvas ref for drawing tracking visualization
-  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [isWaitingNextRound, setIsWaitingNextRound] = useState(false);
+  const [gameHeight, setGameHeight] = useState(typeof window !== 'undefined' ? window.innerHeight - 200 : 600);
+  const [gameWidth, setGameWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 400);
+  const [isHandTrackingReady, setIsHandTrackingReady] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  useEffect(() => {
+    currentRoundRef.current = currentRound;
+  }, [currentRound]);
+
+  useEffect(() => {
+    handResultRef.current = handResult;
+  }, [handResult]);
+
+  useEffect(() => {
+    gameDimensionsRef.current = { width: gameWidth, height: gameHeight };
+  }, [gameWidth, gameHeight]);
 
   // Load high score
   useEffect(() => {
     const saved = localStorage.getItem("tangkap_hijaiyah_highscore");
     if (saved) {
-      setGameState(prev => ({ ...prev, highScore: parseInt(saved) }));
+      setGameState((prev) => ({ ...prev, highScore: parseInt(saved) }));
     }
   }, []);
 
-  // Update game height on resize
+  // Initialize dimensions on mount (client-side only)
   useEffect(() => {
-    const updateHeight = () => {
+    setGameWidth(window.innerWidth);
+    setGameHeight(window.innerHeight - 200);
+    gameDimensionsRef.current = { 
+      width: window.innerWidth, 
+      height: window.innerHeight - 200 
+    };
+  }, []);
+
+  // Update game dimensions on resize
+  useEffect(() => {
+    const updateDimensions = () => {
       if (gameContainerRef.current) {
-        setGameHeight(gameContainerRef.current.clientHeight);
+        const rect = gameContainerRef.current.getBoundingClientRect();
+        const width = rect.width || window.innerWidth;
+        const height = rect.height || window.innerHeight - 200;
+        setGameHeight(height);
+        setGameWidth(width);
+        gameDimensionsRef.current = { width, height };
+      } else {
+        // Fallback when container not yet mounted
+        setGameWidth(window.innerWidth);
+        setGameHeight(window.innerHeight - 200);
+        gameDimensionsRef.current = { 
+          width: window.innerWidth, 
+          height: window.innerHeight - 200 
+        };
       }
     };
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
-    return () => window.removeEventListener("resize", updateHeight);
-  }, []);
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    
+    // Also update on game status change
+    const timer = setTimeout(updateDimensions, 100);
+    
+    return () => {
+      window.removeEventListener("resize", updateDimensions);
+      clearTimeout(timer);
+    };
+  }, [gameState.status]);
 
   // Save high score
   const saveHighScore = useCallback((score: number) => {
     const current = parseInt(localStorage.getItem("tangkap_hijaiyah_highscore") || "0");
     if (score > current) {
       localStorage.setItem("tangkap_hijaiyah_highscore", score.toString());
-      setGameState(prev => ({ ...prev, highScore: score }));
+      setGameState((prev) => ({ ...prev, highScore: score }));
     }
   }, []);
 
-  // Initialize camera
+  // Initialize camera and hand tracking
   const initCamera = useCallback(async () => {
     try {
+      setLoadingMessage("Mengakses kamera...");
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
         await videoRef.current.play();
       }
-      
+
+      setLoadingMessage("Memuat model deteksi tangan...");
+      const trackingReady = await initializeHandTracking();
+
+      if (!trackingReady) {
+        setCameraError("Gagal memuat model deteksi tangan. Silakan refresh halaman.");
+        return false;
+      }
+
+      setIsHandTrackingReady(true);
       setCameraError(null);
-      resetTracking();
+      setLoadingMessage("");
+      resetHandTracking();
       return true;
     } catch (error) {
       console.error("Camera error:", error);
       setCameraError("Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.");
+      setLoadingMessage("");
       return false;
     }
   }, []);
@@ -209,7 +312,7 @@ const TangkapHijaiyahGame = () => {
   // Stop camera
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
   }, []);
@@ -229,197 +332,468 @@ const TangkapHijaiyahGame = () => {
     }
   }, []);
 
-  // Spawn letter
-  const spawnLetter = useCallback(() => {
+  // Get random letters for distractors
+  const getDistractorLetters = useCallback((targetLetter: string, count: number) => {
+    const available = hijaiyahGameLetters.filter((l) => l.letter !== targetLetter);
+    const shuffled = shuffleArray([...available]);
+    return shuffled.slice(0, count);
+  }, []);
+
+  // Spawn new round (3 cards)
+  const spawnRound = useCallback(() => {
+    // CRITICAL: Prevent multiple spawns due to race condition
+    if (isSpawningRef.current) {
+      console.log("Spawn blocked - already spawning");
+      return;
+    }
+    
+    // Set spawning guard IMMEDIATELY (synchronous)
+    isSpawningRef.current = true;
+    
     if (lettersQueueRef.current.length === 0) {
       lettersQueueRef.current = shuffleArray([...hijaiyahGameLetters]);
       letterIndexRef.current = 0;
     }
-    
-    const letterData = lettersQueueRef.current[letterIndexRef.current];
+
+    const targetData = lettersQueueRef.current[letterIndexRef.current];
     letterIndexRef.current = (letterIndexRef.current + 1) % lettersQueueRef.current.length;
-    
-    // Avoid same lane twice in a row
-    let lane = Math.floor(Math.random() * GAME_CONFIG.LANES);
-    if (lane === lastLaneRef.current) {
-      lane = (lane + 1 + Math.floor(Math.random() * 2)) % GAME_CONFIG.LANES;
+
+    // Get 2 distractors - ensure they're different from target
+    const distractors = getDistractorLetters(targetData.letter, 2);
+
+    // Safety check: ensure we have valid distractors
+    if (!distractors || distractors.length < 2) {
+      console.error("Failed to get enough distractors, retrying...");
+      // Retry with fresh shuffle
+      lettersQueueRef.current = shuffleArray([...hijaiyahGameLetters]);
+      letterIndexRef.current = 0;
+      isSpawningRef.current = false; // Release guard on early return
+      return;
     }
-    lastLaneRef.current = lane;
+
+    // Create cards EXPLICITLY with separate objects to avoid any reference issues
+    const targetCard = {
+      letter: targetData.letter,
+      name: targetData.name,
+      audio: targetData.audio,
+      isTarget: true as const,
+    };
+
+    const distractorCard1 = {
+      letter: distractors[0].letter,
+      name: distractors[0].name,
+      audio: distractors[0].audio,
+      isTarget: false as const,
+    };
+
+    const distractorCard2 = {
+      letter: distractors[1].letter,
+      name: distractors[1].name,
+      audio: distractors[1].audio,
+      isTarget: false as const,
+    };
+
+    // Combine cards - target is ALWAYS first before shuffle
+    const allCards = [targetCard, distractorCard1, distractorCard2];
     
-    const speed = GAME_CONFIG.INITIAL_FALL_SPEED + 
-      (gameState.level - 1) * GAME_CONFIG.SPEED_INCREMENT;
-    
-    const newLetter: FallingLetter = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      letter: letterData.letter,
-      name: letterData.name,
-      audio: letterData.audio,
-      lane,
-      y: -GAME_CONFIG.LETTER_SIZE,
+    // Shuffle positions (0, 1, 2) instead of cards themselves to preserve isTarget
+    const positions = shuffleArray([0, 1, 2]);
+
+    const speed = GAME_CONFIG.INITIAL_FALL_SPEED + (gameState.level - 1) * GAME_CONFIG.SPEED_INCREMENT;
+
+    // Generate unique round ID to prevent duplicate rounds
+    const roundId = `round-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    currentRoundIdRef.current = roundId;
+
+    // Create falling cards with shuffled lane positions
+    const cards: FallingCard[] = allCards.map((card, index) => ({
+      id: `${roundId}-${index}-${card.letter}`,
+      letter: card.letter,
+      name: card.name,
+      audio: card.audio,
+      lane: positions[index], // Shuffled lane position
+      y: -GAME_CONFIG.CARD_HEIGHT,
       speed,
+      isTarget: card.isTarget, // This is now guaranteed correct
       caught: false,
       missed: false,
-    };
-    
-    setFallingLetters(prev => [...prev, newLetter]);
-    setCurrentLetterName(letterData.name.charAt(0).toUpperCase() + letterData.name.slice(1));
-    playAudio(letterData.audio);
-  }, [gameState.level, playAudio]);
+    }));
 
-  // Detect player position with advanced tracking
-  const detectPosition = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    // CRITICAL SAFETY CHECK: Verify exactly one target exists
+    const targetCount = cards.filter(c => c.isTarget === true).length;
+    const targetInCards = cards.find(c => c.isTarget === true);
     
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    
-    if (!ctx || video.readyState !== 4) return;
-    
-    const width = video.videoWidth || 640;
-    const height = video.videoHeight || 480;
-    
-    // Track player using advanced detection
-    const result = await trackPlayer(video, canvas, ctx, {
-      canvasWidth: width,
-      canvasHeight: height,
-    });
-    
-    setTrackingResult(result);
-    setPlayerLane(result.lane);
-    
-    // Draw tracking overlay on visible canvas
-    if (overlayCanvasRef.current) {
-      const overlayCtx = overlayCanvasRef.current.getContext("2d");
-      if (overlayCtx) {
-        overlayCanvasRef.current.width = width;
-        overlayCanvasRef.current.height = height;
-        overlayCtx.clearRect(0, 0, width, height);
-        drawTrackingOverlay(overlayCtx, result, width, height);
-      }
+    if (targetCount !== 1 || !targetInCards) {
+      console.error(`CRITICAL BUG: Expected 1 target, found ${targetCount}. Forcing target card.`);
+      // Force fix: make first card the target
+      cards[0].isTarget = true;
+      cards[0].letter = targetData.letter;
+      cards[0].name = targetData.name;
+      cards[0].audio = targetData.audio;
+      cards[1].isTarget = false;
+      cards[2].isTarget = false;
     }
-  }, []);
+
+    // Verify target letter matches
+    const actualTarget = cards.find(c => c.isTarget);
+    if (actualTarget && actualTarget.letter !== targetData.letter) {
+      console.error(`CRITICAL BUG: Target letter mismatch! Expected ${targetData.letter}, got ${actualTarget.letter}`);
+      actualTarget.letter = targetData.letter;
+      actualTarget.name = targetData.name;
+      actualTarget.audio = targetData.audio;
+    }
+
+    const newRound: GameRound = {
+      targetLetter: targetData.letter,
+      targetName: targetData.name,
+      targetAudio: targetData.audio,
+      cards,
+      isActive: true,
+    };
+
+    // Final verification log (can be removed in production)
+    console.log(`Round spawned [${roundId}]: Target=${targetData.letter}, Cards=[${cards.map(c => `${c.letter}(${c.isTarget ? 'T' : 'F'})`).join(', ')}]`);
+
+    // Update state and ref SYNCHRONOUSLY to prevent race conditions
+    currentRoundRef.current = newRound;
+    setCurrentRound(newRound);
+
+    // Play target letter audio
+    playAudio(targetData.audio);
+    
+    // Release spawn guard after a short delay to ensure state is settled
+    // This prevents any potential race condition from rapid game loop calls
+    setTimeout(() => {
+      isSpawningRef.current = false;
+    }, 100);
+  }, [gameState.level, getDistractorLetters, playAudio]);
 
   // Add catch effect
-  const addCatchEffect = useCallback((lane: number, success: boolean, letter: string) => {
+  const addCatchEffect = useCallback((x: number, y: number, success: boolean, letter: string) => {
     const effect: CatchEffect = {
       id: `effect-${Date.now()}`,
-      lane,
+      x,
+      y,
       success,
       letter,
     };
-    setCatchEffects(prev => [...prev, effect]);
+    setCatchEffects((prev) => [...prev, effect]);
     setTimeout(() => {
-      setCatchEffects(prev => prev.filter(e => e.id !== effect.id));
-    }, 500);
+      setCatchEffects((prev) => prev.filter((e) => e.id !== effect.id));
+    }, 1500);
   }, []);
 
-  // Game loop
-  const gameLoop = useCallback((timestamp: number) => {
-    if (gameState.status !== "playing") return;
-    
-    // Detect player position
-    detectPosition();
-    
-    // Spawn new letters
-    const spawnInterval = Math.max(
-      GAME_CONFIG.SPAWN_INTERVAL_MIN,
-      GAME_CONFIG.SPAWN_INTERVAL_INITIAL - (gameState.level - 1) * 150
-    );
-    
-    if (timestamp - lastSpawnTimeRef.current > spawnInterval) {
-      spawnLetter();
-      lastSpawnTimeRef.current = timestamp;
-    }
-    
-    // Update letters
-    const catchZoneTop = gameHeight - GAME_CONFIG.CATCH_ZONE_HEIGHT - 60;
-    const catchZoneBottom = gameHeight - 60;
-    
-    setFallingLetters(prev => {
-      let scoreToAdd = 0;
-      let livesToRemove = 0;
-      let caught = false;
-      
-      const updated = prev.map(letter => {
-        if (letter.caught || letter.missed) return letter;
-        
-        const newY = letter.y + letter.speed;
-        
-        // Check catch zone
-        const letterBottom = newY + GAME_CONFIG.LETTER_SIZE;
-        
-        if (letterBottom >= catchZoneTop && newY <= catchZoneBottom) {
-          if (letter.lane === playerLane && !letter.caught) {
-            // Caught!
-            addCatchEffect(letter.lane, true, letter.letter);
-            scoreToAdd += GAME_CONFIG.POINTS_PER_CATCH * (1 + gameState.combo * 0.1);
-            caught = true;
-            return { ...letter, y: newY, caught: true };
-          }
-        }
-        
-        // Check miss
-        if (newY > catchZoneBottom + 20 && !letter.caught) {
-          addCatchEffect(letter.lane, false, letter.letter);
-          livesToRemove++;
-          return { ...letter, missed: true };
-        }
-        
-        return { ...letter, y: newY };
-      });
-      
-      // Update game state
-      if (scoreToAdd > 0 || livesToRemove > 0 || caught) {
-        setGameState(prev => {
-          const newLives = Math.max(0, prev.lives - livesToRemove);
-          const newCombo = caught ? prev.combo + 1 : (livesToRemove > 0 ? 0 : prev.combo);
-          const newLettersCaught = caught ? prev.lettersCaught + 1 : prev.lettersCaught;
-          const newLevel = Math.floor(newLettersCaught / GAME_CONFIG.LETTERS_PER_LEVEL) + 1;
-          
-          if (newLives <= 0) {
-            return { ...prev, lives: 0, status: "gameover", combo: newCombo };
-          }
-          
-          return {
-            ...prev,
-            score: prev.score + Math.floor(scoreToAdd),
-            lives: newLives,
-            combo: newCombo,
-            lettersCaught: newLettersCaught,
-            level: newLevel,
-          };
+  // Calculate lane positions
+  const laneWidth = useMemo(() => gameWidth / GAME_CONFIG.LANES, [gameWidth]);
+
+  const getLaneCenter = useCallback(
+    (lane: number) => {
+      return lane * laneWidth + laneWidth / 2;
+    },
+    [laneWidth]
+  );
+
+  // Detect hand position
+  const detectPosition = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current || !isHandTrackingReady) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (video.readyState !== 4) return;
+
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const result = await detectHands(video, width, height);
+    setHandResult(result);
+
+    // Draw hand skeleton on overlay canvas
+    if (overlayCanvasRef.current && result.detected) {
+      const overlayCtx = overlayCanvasRef.current.getContext("2d");
+      if (overlayCtx) {
+        overlayCanvasRef.current.width = gameWidth;
+        overlayCanvasRef.current.height = gameHeight;
+        overlayCtx.clearRect(0, 0, gameWidth, gameHeight);
+
+        // Scale landmarks to game dimensions
+        const scaleX = gameWidth / width;
+        const scaleY = gameHeight / height;
+
+        const scaledResult: HandTrackingResult = {
+          ...result,
+          landmarks: result.landmarks?.map((lm) => ({
+            x: lm.x * scaleX,
+            y: lm.y * scaleY,
+            z: lm.z,
+          })) || null,
+          palmCenter: result.palmCenter
+            ? { x: result.palmCenter.x * scaleX, y: result.palmCenter.y * scaleY }
+            : null,
+          fingertips: result.fingertips?.map((ft) => ({
+            x: ft.x * scaleX,
+            y: ft.y * scaleY,
+          })) || null,
+          boundingBox: result.boundingBox
+            ? {
+                x: result.boundingBox.x * scaleX,
+                y: result.boundingBox.y * scaleY,
+                width: result.boundingBox.width * scaleX,
+                height: result.boundingBox.height * scaleY,
+              }
+            : null,
+        };
+
+        drawHandSkeleton(overlayCtx, scaledResult, gameWidth, gameHeight, {
+          lineColor: "#00FF00",
+          jointColor: "#FF0000",
+          lineWidth: 4,
+          jointRadius: 8,
+          mirrorX: true,
         });
       }
+    } else if (overlayCanvasRef.current) {
+      const overlayCtx = overlayCanvasRef.current.getContext("2d");
+      if (overlayCtx) {
+        overlayCtx.clearRect(0, 0, gameWidth, gameHeight);
+      }
+    }
+  }, [isHandTrackingReady, gameWidth, gameHeight]);
+
+  // Helper function to process cards (defined before gameLoop to avoid hoisting issues)
+  const processCards = useCallback(
+    (
+      roundData: GameRound,
+      handResult: HandTrackingResult | null,
+      gWidth: number,
+      gHeight: number,
+      getLaneCenterFn: (lane: number) => number
+    ): {
+      updatedCards: FallingCard[];
+      caughtCard: FallingCard | null;
+      roundEnded: boolean;
+      allMissed: boolean;
+      hasChanges: boolean;
+    } => {
+      let caughtCard: FallingCard | null = null;
+      let roundEnded = false;
+
+      const updatedCards = roundData.cards.map((card) => {
+        if (card.caught || card.missed) return card;
+
+        const newY = card.y + card.speed;
+
+        // Check collision with hand
+        if (handResult?.detected && handResult?.landmarks) {
+          const cardRect = {
+            x: getLaneCenterFn(card.lane) - GAME_CONFIG.CARD_WIDTH / 2,
+            y: newY,
+            width: GAME_CONFIG.CARD_WIDTH,
+            height: GAME_CONFIG.CARD_HEIGHT,
+          };
+
+          const videoWidth = videoRef.current?.videoWidth || 640;
+          const videoHeight = videoRef.current?.videoHeight || 480;
+          const scaleX = gWidth / videoWidth;
+          const scaleY = gHeight / videoHeight;
+
+          const scaledHandResult: HandTrackingResult = {
+            ...handResult,
+            fingertips: handResult.fingertips?.map((ft) => ({
+              x: ft.x * scaleX,
+              y: ft.y * scaleY,
+            })) || null,
+            palmCenter: handResult.palmCenter
+              ? { x: handResult.palmCenter.x * scaleX, y: handResult.palmCenter.y * scaleY }
+              : null,
+            landmarks: handResult.landmarks?.map((lm) => ({
+              x: lm.x * scaleX,
+              y: lm.y * scaleY,
+              z: lm.z,
+            })) || null,
+            boundingBox: null,
+          };
+
+          if (checkHandCollision(scaledHandResult, cardRect, gWidth, true)) {
+            const caught = { ...card, y: newY, caught: true };
+            caughtCard = caught;
+            roundEnded = true;
+            return caught;
+          }
+        }
+
+        // Check if card missed (fell past screen)
+        if (newY > gHeight + 50) {
+          return { ...card, missed: true };
+        }
+
+        return { ...card, y: newY };
+      });
+
+      const allMissed = updatedCards.every((c) => c.missed);
+      if (allMissed && !roundEnded) {
+        roundEnded = true;
+      }
+
+      return {
+        updatedCards,
+        caughtCard,
+        roundEnded,
+        allMissed,
+        hasChanges: true,
+      };
+    },
+    []
+  );
+
+  // Game loop - using refs to avoid recreating callback
+  const gameLoop = useCallback(
+    (timestamp: number) => {
+      const currentGameState = gameStateRef.current;
+      const currentRoundData = currentRoundRef.current;
+      const currentHandResult = handResultRef.current;
+      const { width: gWidth, height: gHeight } = gameDimensionsRef.current;
+
+      if (!currentGameState || currentGameState.status !== "playing") return;
+
+      // Detect hand position
+      detectPosition();
+
+      // Spawn new round if none active (with delay after previous round)
+      const timeSinceRoundEnd = timestamp - roundEndTimeRef.current;
+      const roundIsInactive = !currentRoundData?.isActive;
+      const delayPassed = timeSinceRoundEnd > GAME_CONFIG.ROUND_DELAY;
+      const notCurrentlySpawning = !isSpawningRef.current;
       
-      // Clean up
-      return updated.filter(l => !(l.caught && l.y > gameHeight) && !l.missed);
-    });
-    
-    animationFrameRef.current = requestAnimationFrame(gameLoop);
-  }, [gameState.status, gameState.level, gameState.combo, playerLane, gameHeight, detectPosition, spawnLetter, addCatchEffect]);
+      // Update waiting state for UI
+      if (roundIsInactive && !delayPassed && roundEndTimeRef.current > 0) {
+        setIsWaitingNextRound(true);
+      } else if (!roundIsInactive) {
+        setIsWaitingNextRound(false);
+      }
+
+      // CRITICAL: Only spawn if ALL conditions are met
+      if (roundIsInactive && delayPassed && notCurrentlySpawning) {
+        console.log(`Spawning new round - delay: ${timeSinceRoundEnd}ms`);
+        spawnRound();
+        lastSpawnTimeRef.current = timestamp;
+        setIsWaitingNextRound(false);
+      }
+
+      // Update cards - always update even without hand detection
+      if (currentRoundData?.isActive) {
+        // First pass: update card positions and check collisions
+        const processedResult = processCards(
+          currentRoundData,
+          currentHandResult,
+          gWidth,
+          gHeight,
+          getLaneCenter
+        );
+
+        if (processedResult.hasChanges) {
+          // Update ref first (synchronous) to prevent race conditions
+          const updatedRound = {
+            ...currentRoundData,
+            cards: processedResult.updatedCards,
+            isActive: !processedResult.roundEnded,
+          };
+          currentRoundRef.current = updatedRound;
+          
+          // Then update state
+          setCurrentRound(updatedRound);
+
+          // Handle caught card effects
+          if (processedResult.caughtCard) {
+            const { caughtCard } = processedResult;
+            const cardCenterX = getLaneCenter(caughtCard.lane);
+            const cardCenterY = caughtCard.y + GAME_CONFIG.CARD_HEIGHT / 2;
+            
+            // Set round end time for delay before next round
+            roundEndTimeRef.current = performance.now();
+
+            if (caughtCard.isTarget) {
+              addCatchEffect(cardCenterX, cardCenterY, true, caughtCard.letter);
+              setGameState((prevState) => {
+                const newCombo = prevState.combo + 1;
+                const points = Math.floor(GAME_CONFIG.POINTS_CORRECT * (1 + (newCombo - 1) * 0.2));
+                const newRoundsCompleted = prevState.roundsCompleted + 1;
+                const newLevel = Math.floor(newRoundsCompleted / GAME_CONFIG.ROUNDS_PER_LEVEL) + 1;
+                return {
+                  ...prevState,
+                  score: prevState.score + points,
+                  combo: newCombo,
+                  roundsCompleted: newRoundsCompleted,
+                  level: newLevel,
+                };
+              });
+            } else {
+              addCatchEffect(cardCenterX, cardCenterY, false, caughtCard.letter);
+              setGameState((prevState) => {
+                const newLives = prevState.lives - 1;
+                if (newLives <= 0) {
+                  return { ...prevState, lives: 0, status: "gameover", combo: 0 };
+                }
+                return {
+                  ...prevState,
+                  lives: newLives,
+                  combo: 0,
+                  score: Math.max(0, prevState.score + GAME_CONFIG.POINTS_WRONG),
+                };
+              });
+            }
+          }
+
+          // Handle all cards missed
+          if (processedResult.allMissed && !processedResult.caughtCard) {
+            // Set round end time for delay before next round
+            roundEndTimeRef.current = performance.now();
+            
+            setGameState((prevState) => {
+              const newLives = prevState.lives - 1;
+              if (newLives <= 0) {
+                return { ...prevState, lives: 0, status: "gameover", combo: 0 };
+              }
+              return { ...prevState, lives: newLives, combo: 0 };
+            });
+          }
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(gameLoop);
+    },
+    // Minimal dependencies - using refs for dynamic values
+    [detectPosition, spawnRound, getLaneCenter, addCatchEffect, processCards]
+  );
 
   // Start game
   const startGame = useCallback(async () => {
     const cameraReady = await initCamera();
     if (!cameraReady) return;
-    
-    setGameState(prev => ({
+
+    setGameState((prev) => ({
       ...prev,
       status: "countdown",
       score: 0,
       lives: GAME_CONFIG.LIVES,
       level: 1,
-      lettersCaught: 0,
+      roundsCompleted: 0,
       combo: 0,
     }));
-    
-    setFallingLetters([]);
+
+    setCurrentRound(null);
+    currentRoundRef.current = null; // Also reset ref
     setCatchEffects([]);
     setCountdown(3);
-    resetTracking();
-    
-    // Use refs to avoid stale closure issues
+    resetHandTracking();
+    roundEndTimeRef.current = 0; // Reset round end time
+    isSpawningRef.current = false; // Reset spawn guard
+    currentRoundIdRef.current = ""; // Reset round ID
+    setIsWaitingNextRound(false); // Reset waiting state
+
     let count = 3;
     const countdownInterval = setInterval(() => {
       count--;
@@ -428,18 +802,18 @@ const TangkapHijaiyahGame = () => {
       } else {
         clearInterval(countdownInterval);
         setCountdown(0);
-        setGameState(prev => ({ ...prev, status: "playing" }));
+        setGameState((prev) => ({ ...prev, status: "playing" }));
         lastSpawnTimeRef.current = performance.now();
         animationFrameRef.current = requestAnimationFrame(gameLoop);
       }
     }, 1000);
-    
+
     return () => clearInterval(countdownInterval);
   }, [initCamera, gameLoop]);
 
   // Toggle pause
   const togglePause = useCallback(() => {
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       status: prev.status === "playing" ? "paused" : "playing",
     }));
@@ -450,8 +824,9 @@ const TangkapHijaiyahGame = () => {
     cancelAnimationFrame(animationFrameRef.current);
     saveHighScore(gameState.score);
     stopCamera();
-    setGameState(prev => ({ ...prev, status: "menu" }));
-    setFallingLetters([]);
+    cleanupHandTracking();
+    setGameState((prev) => ({ ...prev, status: "menu" }));
+    setCurrentRound(null);
   }, [gameState.score, saveHighScore, stopCamera]);
 
   // Handle game over
@@ -471,16 +846,16 @@ const TangkapHijaiyahGame = () => {
     return () => cancelAnimationFrame(animationFrameRef.current);
   }, [gameState.status, gameLoop]);
 
-  // Run tracking during countdown to show preview
+  // Run tracking during countdown
   useEffect(() => {
     let trackingInterval: NodeJS.Timeout;
-    
+
     if (gameState.status === "countdown") {
       trackingInterval = setInterval(() => {
         detectPosition();
-      }, 100); // Run tracking at ~10fps during countdown
+      }, 50);
     }
-    
+
     return () => {
       if (trackingInterval) clearInterval(trackingInterval);
     };
@@ -491,24 +866,18 @@ const TangkapHijaiyahGame = () => {
     return () => {
       cancelAnimationFrame(animationFrameRef.current);
       stopCamera();
+      cleanupHandTracking();
       if (audioRef.current) audioRef.current.pause();
     };
   }, [stopCamera]);
 
-  // Calculate lane positions
-  const laneWidth = useMemo(() => 100 / GAME_CONFIG.LANES, []);
-
-  // Check if game is active (not menu or gameover)
-  const isGameActive = gameState.status === "playing" || gameState.status === "paused" || gameState.status === "countdown";
+  // Check if game is active
+  const isGameActive =
+    gameState.status === "playing" || gameState.status === "paused" || gameState.status === "countdown";
 
   return (
     <div className="w-full min-h-screen bg-[#FDFFF2] overflow-hidden relative">
-      {/* 
-        CRITICAL: Single video element that persists across all game states.
-        - Hidden during menu state
-        - Visible as fullscreen background during countdown, playing, and paused states
-        - This ensures stream is always connected and pose detection works correctly
-      */}
+      {/* Video element - always in DOM */}
       <video
         ref={videoRef}
         className={`fixed inset-x-0 w-full object-cover transition-opacity duration-300 ${
@@ -519,12 +888,12 @@ const TangkapHijaiyahGame = () => {
         autoPlay
         style={{ transform: "scaleX(-1)" }}
       />
-      {/* Hidden canvas for pose detection - always in DOM */}
+      {/* Hidden canvas for detection */}
       <canvas ref={canvasRef} className="hidden" />
-      
-      <Topbar 
-        title="Tangkap Hijaiyah" 
-        textColor={gameState.status === 'menu' ? 'text-black' : 'text-background'}
+
+      <Topbar
+        title="Tangkap Hijaiyah"
+        textColor={gameState.status === "menu" ? "text-black" : "text-background"}
         isTransparentBg={gameState.status === "menu" ? false : true}
         onBackClick={() => {
           endGame();
@@ -537,50 +906,60 @@ const TangkapHijaiyahGame = () => {
         <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
           <div className="text-center mb-8">
             <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-4 bg-gradient-to-br from-[#E37100] to-[#BE9D77] rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform">
-              <span className="text-5xl sm:text-6xl font-arabic text-white">ب</span>
+              <span className="text-5xl sm:text-6xl font-arabic text-white">✋</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#BE9D77] mb-2">Tangkap Hijaiyah</h1>
-            <p className="text-[#BE9D77]/70 text-sm sm:text-base">Gerakkan tubuhmu untuk menangkap huruf!</p>
+            <p className="text-[#BE9D77]/70 text-sm sm:text-base">Gunakan tanganmu untuk menangkap huruf yang benar!</p>
           </div>
-          
+
           {gameState.highScore > 0 && (
             <div className="bg-[#EDD1B0]/30 backdrop-blur-sm rounded-xl px-6 py-3 mb-6 border border-[#BE9D77]/30">
               <p className="text-[#BE9D77]/70 text-sm">Skor Tertinggi</p>
               <p className="text-2xl font-bold text-[#E37100]">{gameState.highScore}</p>
             </div>
           )}
-          
+
           <div className="bg-[#EDD1B0]/30 backdrop-blur-sm rounded-2xl p-5 sm:p-6 mb-8 max-w-sm w-full border border-[#BE9D77]/30">
             <h3 className="text-[#BE9D77] font-semibold mb-3 text-sm sm:text-base">Cara Bermain:</h3>
             <ul className="text-[#BE9D77]/80 text-xs sm:text-sm space-y-2">
               <li className="flex items-start gap-2">
                 <span className="text-[#E37100] font-bold">1.</span>
-                Huruf hijaiyah akan jatuh dari atas
+                Huruf target akan ditampilkan dan disuarakan
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[#E37100] font-bold">2.</span>
-                Gerakkan tubuhmu ke kiri, tengah, atau kanan
+                3 kartu huruf akan jatuh bersamaan
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[#E37100] font-bold">3.</span>
-                Tangkap huruf sebelum jatuh melewati zona
+                Gunakan tanganmu untuk menangkap huruf yang BENAR
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-[#E37100] font-bold">4.</span>
-                Dengarkan dan hafalkan bunyi setiap huruf!
+                Hati-hati! Menangkap huruf salah akan mengurangi nyawa
               </li>
             </ul>
           </div>
-          
+
           {cameraError && (
             <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-6 max-w-sm w-full">
               <p className="text-red-600 text-sm text-center">{cameraError}</p>
             </div>
           )}
-          
+
+          {loadingMessage && (
+            <div className="bg-[#E37100]/20 border border-[#E37100]/50 rounded-xl p-4 mb-6 max-w-sm w-full">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-[#E37100] border-t-transparent rounded-full animate-spin" />
+                <p className="text-[#E37100] text-sm">{loadingMessage}</p>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={startGame}
-            className="bg-gradient-to-r from-[#E37100] to-[#BE9D77] text-white px-10 sm:px-12 py-3 sm:py-4 rounded-full text-lg sm:text-xl font-bold shadow-xl hover:shadow-[#E37100]/30 hover:scale-105 transition-all flex items-center gap-3"
+            disabled={!!loadingMessage}
+            className="bg-gradient-to-r from-[#E37100] to-[#BE9D77] text-white px-10 sm:px-12 py-3 sm:py-4 rounded-full text-lg sm:text-xl font-bold shadow-xl hover:shadow-[#E37100]/30 hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Icon name="RiPlayFill" className="w-5 h-5 sm:w-6 sm:h-6" />
             Mulai Bermain
@@ -591,25 +970,20 @@ const TangkapHijaiyahGame = () => {
       {/* ========== COUNTDOWN SCREEN ========== */}
       {gameState.status === "countdown" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden" style={{ top: "0px" }}>
-          {/* Tracking overlay during countdown */}
-          <canvas 
+          {/* Hand skeleton overlay - no CSS mirror since drawHandSkeleton handles it */}
+          <canvas
             ref={overlayCanvasRef}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            style={{ transform: "scaleX(-1)" }}
+            className="absolute inset-0 w-full h-full pointer-events-none"
           />
-          {/* Dark overlay on top of the video background */}
+          {/* Dark overlay */}
           <div className="absolute inset-0 bg-black/40" />
           <div className="text-center z-10">
-            <div className="text-8xl sm:text-9xl font-bold text-[#E37100] animate-ping">
-              {countdown}
-            </div>
+            <div className="text-8xl sm:text-9xl font-bold text-[#E37100] animate-ping">{countdown}</div>
             <p className="text-white/80 mt-4 text-lg">Bersiap-siap!</p>
-            {trackingResult && (
-              <p className="text-white/60 mt-2 text-sm">
-                Deteksi: {trackingResult.detectionMethod === 'face' ? '👤 Wajah' : 
-                          trackingResult.detectionMethod === 'skinColor' ? '✋ Kulit' : 
-                          trackingResult.detectionMethod === 'motion' ? '🏃 Gerakan' : '⏳ Mencari...'}
-              </p>
+            {handResult?.detected ? (
+              <p className="text-green-400 mt-2 text-sm">✋ Tangan Terdeteksi</p>
+            ) : (
+              <p className="text-yellow-400 mt-2 text-sm">⏳ Tunjukkan tanganmu ke kamera</p>
             )}
           </div>
         </div>
@@ -617,19 +991,19 @@ const TangkapHijaiyahGame = () => {
 
       {/* ========== GAME SCREEN ========== */}
       {(gameState.status === "playing" || gameState.status === "paused" || gameState.status === "gameover") && (
-        <div ref={gameContainerRef} className="relative w-full h-[calc(100vh-128px)] lg:h-[calc(100vh-200px)] overflow-hidden">
-          {/* Video is rendered as fixed element above, so we just add game elements here */}
-          
-          {/* Tracking overlay canvas - shows bounding box on camera */}
-          <canvas 
+        <div
+          ref={gameContainerRef}
+          className="relative w-full h-[calc(100vh-128px)] overflow-hidden"
+        >
+          {/* Hand skeleton overlay - no CSS mirror since drawHandSkeleton handles it */}
+          <canvas
             ref={overlayCanvasRef}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-1"
-            style={{ transform: "scaleX(-1)" }}
+            className="absolute inset-0 w-full h-full pointer-events-none z-10"
           />
-          
-          {/* Subtle overlay to help letters stand out without hiding camera */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 z-[2]" />
-          
+
+          {/* Subtle overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20 z-[2]" />
+
           {/* Lane Dividers */}
           <div className="absolute inset-0 flex pointer-events-none z-[3]">
             {Array.from({ length: GAME_CONFIG.LANES - 1 }).map((_, i) => (
@@ -640,110 +1014,105 @@ const TangkapHijaiyahGame = () => {
               />
             ))}
           </div>
-          
-          {/* Falling Letters */}
-          {fallingLetters.map(letter => (
-            <div
-              key={letter.id}
-              className="absolute transition-transform duration-75 z-[4]"
-              style={{
-                left: `${letter.lane * laneWidth + laneWidth / 2}%`,
-                top: letter.y,
-                transform: "translateX(-50%)",
-              }}
-            >
+
+          {/* Falling Cards */}
+          {currentRound?.cards.map((card) => {
+            if (card.caught || card.missed) return null;
+            return (
               <div
-                className="flex items-center justify-center rounded-2xl shadow-xl border-4 border-white/50"
+                key={card.id}
+                className="absolute transition-transform duration-75 z-[5]"
                 style={{
-                  width: GAME_CONFIG.LETTER_SIZE,
-                  height: GAME_CONFIG.LETTER_SIZE,
-                  backgroundColor: LANE_COLORS[letter.lane],
+                  left: getLaneCenter(card.lane),
+                  top: card.y,
+                  transform: "translateX(-50%)",
                 }}
               >
-                <span className="text-4xl sm:text-5xl font-arabic font-bold text-white drop-shadow-lg">
-                  {letter.letter}
-                </span>
+                <div
+                  className="flex flex-col items-center justify-center rounded-2xl shadow-xl border-4 border-white/50"
+                  style={{
+                    width: GAME_CONFIG.CARD_WIDTH,
+                    height: GAME_CONFIG.CARD_HEIGHT,
+                    backgroundColor: LANE_COLORS[card.lane],
+                  }}
+                >
+                  <span className="text-4xl sm:text-3xl font-arabic font-bold text-white drop-shadow-lg">
+                    {card.letter}
+                  </span>
+                  <span className="text-base text-white/80 mt-1 capitalize">{card.name}</span>
+                </div>
               </div>
-            </div>
-          ))}
-          
-          {/* Catch Zone */}
-          <div 
-            className="absolute left-0 right-0 flex z-[5]"
-            style={{ bottom: 60, height: GAME_CONFIG.CATCH_ZONE_HEIGHT }}
-          >
-            {Array.from({ length: GAME_CONFIG.LANES }).map((_, i) => (
-              <div
-                key={i}
-                className={`flex-1 mx-1 rounded-xl transition-all duration-150 flex items-center justify-center border-2
-                  ${playerLane === i 
-                    ? "bg-[#EDDD6E]/60 border-[#E37100] ring-4 ring-[#E37100]/50 shadow-lg shadow-[#E37100]/30" 
-                    : "bg-white/20 border-white/30"
-                  }`}
-              >
-                {playerLane === i && (
-                  <Icon name="RiUser3Fill" className="w-10 h-10 text-[#E37100] drop-shadow-lg" />
-                )}
-              </div>
-            ))}
-          </div>
-          
+            );
+          })}
+
           {/* Catch Effects */}
-          {catchEffects.map(effect => (
+          {catchEffects.map((effect) => (
             <CatchEffectComponent key={effect.id} effect={effect} />
           ))}
-          
-          {/* Tracking Info Badge */}
-          {trackingResult && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10">
-              <div className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${
-                trackingResult.detectionMethod === 'face' ? 'bg-green-500 text-white' :
-                trackingResult.detectionMethod === 'skinColor' ? 'bg-[#EDDD6E] text-black' :
-                trackingResult.detectionMethod === 'motion' ? 'bg-[#E37100] text-white' :
-                'bg-gray-500 text-white'
-              }`}>
-                {trackingResult.detectionMethod === 'face' ? '👤 Wajah Terdeteksi' : 
-                 trackingResult.detectionMethod === 'skinColor' ? '✋ Kulit Terdeteksi' : 
-                 trackingResult.detectionMethod === 'motion' ? '🏃 Gerakan Terdeteksi' : '⏳ Mencari...'}
+
+          {/* Waiting for Next Round Indicator */}
+          {/* {isWaitingNextRound && gameState.status === "playing" && (
+            <div className="absolute inset-0 flex items-center justify-center z-25 pointer-events-none">
+              <div className="bg-black/50 backdrop-blur-sm rounded-2xl px-8 py-6 text-center animate-pulse">
+                <p className="text-white text-2xl font-bold mb-2">Bersiap...</p>
+                <p className="text-white/70 text-sm">Huruf berikutnya akan turun</p>
+              </div>
+            </div>
+          )} */}
+
+          {/* Hand Detection Status */}
+          {handResult && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20">
+              <div
+                className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${
+                  handResult.detected ? "bg-green-500 text-white" : "bg-yellow-500 text-black"
+                }`}
+              >
+                {handResult.detected ? "✋ Tangan Terdeteksi" : "⏳ Tunjukkan Tangan"}
               </div>
             </div>
           )}
-          
+
           {/* HUD - Top */}
-          <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-start z-10">
+          <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-start z-20">
             <div className="bg-[#BE9D77]/90 backdrop-blur-sm rounded-xl px-3 sm:px-4 py-2 shadow-lg">
               <ScoreDisplay score={gameState.score} level={gameState.level} combo={gameState.combo} />
             </div>
-            
-            {currentLetterName && (
-              <div className="bg-[#E37100]/90 backdrop-blur-sm rounded-xl px-3 sm:px-4 py-2 shadow-lg">
-                <div className="text-white font-bold text-base sm:text-lg">{currentLetterName}</div>
-              </div>
+
+            {/* Target Letter Display */}
+            {currentRound?.isActive && (
+              <TargetLetterDisplay letter={currentRound.targetLetter} name={currentRound.targetName} />
             )}
-            
+
             <div className="bg-[#BE9D77]/90 backdrop-blur-sm rounded-xl px-3 sm:px-4 py-2 shadow-lg">
               <LivesDisplay lives={gameState.lives} maxLives={GAME_CONFIG.LIVES} />
             </div>
           </div>
-          
+
+          {/* Replay Audio Button */}
+          {currentRound?.isActive && (
+            <button
+              onClick={() => playAudio(currentRound.targetAudio)}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-[#E37100]/90 backdrop-blur-sm rounded-full p-3 shadow-lg hover:bg-[#E37100] transition"
+            >
+              <Icon name="RiVolumeUpFill" className="w-6 h-6 text-white" />
+            </button>
+          )}
+
           {/* Lane Labels */}
-          <div className="absolute bottom-2 left-0 right-0 flex justify-around px-2 z-10">
-            {LANE_LABELS.map((label, i) => (
+          <div className="absolute bottom-16 left-0 right-0 flex justify-around px-2 z-[15]">
+            {LANE_LABELS.map((label) => (
               <div
                 key={label}
-                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all shadow-md
-                  ${playerLane === i
-                    ? "bg-[#E37100] text-white scale-110 shadow-lg"
-                    : "bg-white/70 text-[#BE9D77]"
-                  }`}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-white/70 text-[#BE9D77] shadow-md"
               >
                 {label}
               </div>
             ))}
           </div>
-          
+
           {/* Controls */}
-          <div className="absolute top-1/2 right-2 sm:right-4 -translate-y-1/2 flex flex-col gap-2 z-10">
+          <div className="absolute top-1/2 right-2 sm:right-4 -translate-y-1/2 flex flex-col gap-2 z-20">
             <button
               onClick={togglePause}
               className="bg-[#BE9D77]/80 backdrop-blur-sm p-2 sm:p-3 rounded-full hover:bg-[#BE9D77] transition shadow-lg"
@@ -754,10 +1123,10 @@ const TangkapHijaiyahGame = () => {
               />
             </button>
           </div>
-          
+
           {/* Pause Overlay */}
           {gameState.status === "paused" && (
-            <div className="absolute inset-0 bg-black/70 z-20 flex items-center justify-center px-4">
+            <div className="absolute inset-0 bg-black/70 z-30 flex items-center justify-center px-4">
               <div className="bg-[#FDFFF2] backdrop-blur-sm rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border border-[#BE9D77]/30">
                 <Icon name="RiPauseFill" className="w-16 h-16 text-[#BE9D77] mx-auto mb-4" />
                 <h2 className="text-xl sm:text-2xl font-bold text-[#BE9D77] mb-6">Dijeda</h2>
@@ -783,14 +1152,14 @@ const TangkapHijaiyahGame = () => {
 
       {/* ========== GAME OVER SCREEN ========== */}
       {gameState.status === "gameover" && (
-        <div className="fixed inset-0 bg-black/80 z-100 flex items-center justify-center px-4">
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4">
           <div className="bg-[#FDFFF2] rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl border border-[#BE9D77]/30">
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 bg-red-500/20 rounded-full flex items-center justify-center">
               <Icon name="RiEmotionSadLine" className="w-10 h-10 sm:w-12 sm:h-12 text-red-500" />
             </div>
-            
+
             <h2 className="text-2xl sm:text-3xl font-bold text-[#BE9D77] mb-2">Game Over!</h2>
-            
+
             <div className="bg-[#EDD1B0]/30 rounded-xl p-4 my-6 border border-[#BE9D77]/20">
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
@@ -798,8 +1167,8 @@ const TangkapHijaiyahGame = () => {
                   <p className="text-xl sm:text-2xl font-bold text-[#E37100]">{gameState.score}</p>
                 </div>
                 <div>
-                  <p className="text-[#BE9D77]/60 text-xs sm:text-sm">Huruf Ditangkap</p>
-                  <p className="text-xl sm:text-2xl font-bold text-green-500">{gameState.lettersCaught}</p>
+                  <p className="text-[#BE9D77]/60 text-xs sm:text-sm">Ronde Selesai</p>
+                  <p className="text-xl sm:text-2xl font-bold text-green-500">{gameState.roundsCompleted}</p>
                 </div>
                 <div>
                   <p className="text-[#BE9D77]/60 text-xs sm:text-sm">Level Tercapai</p>
@@ -811,13 +1180,13 @@ const TangkapHijaiyahGame = () => {
                 </div>
               </div>
             </div>
-            
+
             {gameState.score >= gameState.highScore && gameState.score > 0 && (
               <div className="bg-[#EDDD6E]/30 border border-[#EDDD6E] rounded-xl p-3 mb-6">
                 <p className="text-[#E37100] font-semibold text-sm sm:text-base">🎉 Skor Tertinggi Baru!</p>
               </div>
             )}
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={startGame}
@@ -828,6 +1197,7 @@ const TangkapHijaiyahGame = () => {
               <button
                 onClick={() => {
                   stopCamera();
+                  cleanupHandTracking();
                   router.back();
                 }}
                 className="flex-1 bg-[#BE9D77]/30 text-[#BE9D77] py-3 rounded-xl font-semibold hover:bg-[#BE9D77]/40 transition"
@@ -842,11 +1212,17 @@ const TangkapHijaiyahGame = () => {
       {/* CSS for animations */}
       <style jsx global>{`
         @keyframes bounce-up {
-          0% { transform: translateY(0) translateX(-50%); opacity: 1; }
-          100% { transform: translateY(-50px) translateX(-50%); opacity: 0; }
+          0% {
+            transform: translateY(0) translateX(-50%);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-80px) translateX(-50%);
+            opacity: 0;
+          }
         }
         .animate-bounce-up {
-          animation: bounce-up 0.5s ease-out forwards;
+          animation: bounce-up 2s ease-out forwards;
         }
       `}</style>
     </div>
