@@ -26,6 +26,8 @@ const GAME_CONFIG = {
   SPEED_INCREMENT_MOBILE: 0.5, // Faster increment on mobile
   CARD_WIDTH: 136,
   CARD_HEIGHT: 136,
+  COLLISION_SCALE_DESKTOP: 1.0, // Full collision area on desktop
+  COLLISION_SCALE_MOBILE: 0.2, // Smaller collision area on mobile/tablet (20%)
   SPAWN_INTERVAL_INITIAL: 500,
   SPAWN_INTERVAL_MIN: 500,
   ROUND_DELAY: 2000, // 2 second delay between rounds
@@ -554,11 +556,14 @@ const TangkapHijaiyahGame = () => {
             : null,
         };
 
+        // Use smaller hand skeleton on mobile/tablet
+        const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < GAME_CONFIG.MOBILE_BREAKPOINT;
+        
         drawHandSkeleton(overlayCtx, scaledResult, gameWidth, gameHeight, {
           lineColor: "#00FF00",
           jointColor: "#FF0000",
-          lineWidth: 4,
-          jointRadius: 8,
+          lineWidth: isMobileDevice ? 2 : 4,
+          jointRadius: isMobileDevice ? 4 : 8,
           mirrorX: true,
         });
       }
@@ -595,11 +600,17 @@ const TangkapHijaiyahGame = () => {
 
         // Check collision with hand
         if (handResult?.detected && handResult?.landmarks) {
+          // Use smaller collision area on mobile/tablet for less error tolerance
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < GAME_CONFIG.MOBILE_BREAKPOINT;
+          const collisionScale = isMobile ? GAME_CONFIG.COLLISION_SCALE_MOBILE : GAME_CONFIG.COLLISION_SCALE_DESKTOP;
+          const scaledWidth = GAME_CONFIG.CARD_WIDTH * collisionScale;
+          const scaledHeight = GAME_CONFIG.CARD_HEIGHT * collisionScale;
+          
           const cardRect = {
-            x: getLaneCenterFn(card.lane) - GAME_CONFIG.CARD_WIDTH / 2,
-            y: newY,
-            width: GAME_CONFIG.CARD_WIDTH,
-            height: GAME_CONFIG.CARD_HEIGHT,
+            x: getLaneCenterFn(card.lane) - scaledWidth / 2,
+            y: newY + (GAME_CONFIG.CARD_HEIGHT - scaledHeight) / 2, // Center the smaller hitbox
+            width: scaledWidth,
+            height: scaledHeight,
           };
 
           const videoWidth = videoRef.current?.videoWidth || 640;
