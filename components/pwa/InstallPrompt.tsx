@@ -266,13 +266,20 @@ const InstallPrompt: React.FC = () => {
         </p>
 
         {/* Features */}
-        <div className="grid grid-cols-2 gap-3 max-w-xs w-full mb-8">
+        <div className="grid grid-cols-3 gap-2 max-w-sm w-full mb-8">
           <div className="bg-white/80 backdrop-blur rounded-xl p-3 shadow-sm">
             <Icon
               name="RiBookOpenLine"
               className="w-6 h-6 text-[#C98151] mx-auto mb-1"
             />
-            <p className="text-xs text-gray-600">Baca Quran dan Iqra&apos;</p>
+            <p className="text-xs text-gray-600">Baca Quran</p>
+          </div>
+          <div className="bg-white/80 backdrop-blur rounded-xl p-3 shadow-sm">
+            <Icon
+              name="RiBookReadLine"
+              className="w-6 h-6 text-[#C98151] mx-auto mb-1"
+            />
+            <p className="text-xs text-gray-600">Baca Iqra&apos;</p>
           </div>
           <div className="bg-white/80 backdrop-blur rounded-xl p-3 shadow-sm">
             <Icon
@@ -294,6 +301,13 @@ const InstallPrompt: React.FC = () => {
               className="w-6 h-6 text-[#C98151] mx-auto mb-1"
             />
             <p className="text-xs text-gray-600">Tebak Hijaiyah</p>
+          </div>
+          <div className="bg-white/80 backdrop-blur rounded-xl p-3 shadow-sm">
+            <Icon
+              name="RiHand"
+              className="w-6 h-6 text-[#C98151] mx-auto mb-1"
+            />
+            <p className="text-xs text-gray-600">Tangkap Hijaiyah</p>
           </div>
         </div>
 
