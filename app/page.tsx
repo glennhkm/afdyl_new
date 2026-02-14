@@ -21,7 +21,7 @@ const Home = () => {
       {/* Teacher Mode */}
       <Link
         href="/guru"
-        className="flex-1 fixed top-0 right-0 bg-emerald-600 text-white rounded-bl-2xl p-4 shadow-lg hover:opacity-90 transition-all duration-200 hover:-translate-y-1 group"
+        className="flex-1 fixed top-0 z-100 right-0 bg-emerald-600 text-white rounded-bl-2xl p-4 shadow-lg hover:opacity-90 transition-all duration-200 hover:-translate-y-1 group"
       >
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-bold">Mode Pengajar</h2>
@@ -52,12 +52,6 @@ const Home = () => {
             className="bg-brown-brand text-white rounded-2xl p-6 sm:p-8 shadow-lg hover:opacity-90 transition-all duration-200 hover:-translate-y-1 group"
           >
             <div className="flex flex-col items-center gap-3 sm:gap-4">
-              {/* <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Icon
-                  name="RiBookOpenLine"
-                  className="w-8 h-8 sm:w-10 sm:h-10 text-white"
-                />
-              </div> */}
               <h2 className="text-xl sm:text-2xl font-bold">Mulai Belajar</h2>
             </div>
           </Link>

@@ -4,6 +4,7 @@ import Topbar from "@/components/topbar";
 import Link from "next/link";
 import Icon from "@/components/Icon";
 import { useStudentProgress } from "@/contexts/StudentProgressContext";
+import { useRouter } from "next/navigation";
 
 interface MenuItem {
   title: string;
@@ -13,6 +14,7 @@ interface MenuItem {
 }
 
 const ClientPage = () => {
+  const router = useRouter();
   const { 
     quranProgress, 
     iqraProgress, 
@@ -66,7 +68,7 @@ const ClientPage = () => {
 
   return (
     <div className="w-full h-full overflow-x-hidden py-4">
-      <Topbar title="Yuk Belajar!" />
+      <Topbar title="Yuk Belajar!" onBackClick={() => router.push("/")} />
       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {menu.map((item, index) => (
           <Link
