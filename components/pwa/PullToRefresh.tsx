@@ -213,9 +213,9 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({
 
       {/* Content with pull effect */}
       <div
-        className="transition-transform duration-200 ease-out"
         style={{
-          transform: isPulling || isRefreshing ? `translateY(${pullDistance}px)` : "translateY(0)",
+          transition: "margin-top 200ms ease-out",
+          marginTop: isPulling || isRefreshing ? `${pullDistance}px` : "0",
         }}
       >
         {children}

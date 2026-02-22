@@ -209,6 +209,10 @@ const ReadingContent = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ayahRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Continuous play mode ref - true when triggered from floating controls
+  const isContinuousRef = useRef<boolean>(false);
+  // Ref to latest playAyahAudio to avoid stale closure in audio ended handler
+  const playAyahAudioRef = useRef<((ayahIndex: number, continuous?: boolean) => void) | null>(null);
 
   // Computed values
   const ayahNumberSize = useMemo(
@@ -296,12 +300,15 @@ const ReadingContent = () => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
+    isContinuousRef.current = false;
     setAutoHighlight(false);
   }, []);
 
   // Play ayah audio
+  // continuous=true  → triggered from floating "Putar" button, plays until the last ayah
+  // continuous=false → triggered from per-ayah play button, plays only that one ayah
   const playAyahAudio = useCallback(
-    (ayahIndex: number) => {
+    (ayahIndex: number, continuous: boolean = false) => {
       if (ayahs.length === 0 || ayahIndex >= ayahs.length) return;
 
       const ayah = ayahs[ayahIndex];
@@ -312,11 +319,15 @@ const ReadingContent = () => {
         return;
       }
 
-      // If same ayah is playing, pause it
+      // If same ayah is playing AND same mode, treat as toggle → stop
       if (currentActiveAyah === ayahIndex && autoHighlight) {
         stopAutoHighlight();
         return;
       }
+
+      // Record the playback mode in a ref so the ended-handler always reads
+      // the latest value without stale-closure issues
+      isContinuousRef.current = continuous;
 
       setCurrentActiveAyah(ayahIndex);
       setCurrentActiveWord(0);
@@ -324,7 +335,7 @@ const ReadingContent = () => {
 
       scrollToAyah(ayahIndex);
 
-      // Create and play audio
+      // Stop any previously playing audio
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -332,6 +343,7 @@ const ReadingContent = () => {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
+      // Word-by-word highlight via timing segments
       audio.addEventListener("timeupdate", () => {
         const ms = audio.currentTime * 1000;
         const segments = getAyahTimings(timings, number, ayah.number);
@@ -360,24 +372,15 @@ const ReadingContent = () => {
       });
 
       audio.addEventListener("ended", () => {
-        // Move to next ayah - use recursive pattern via setTimeout
-        if (ayahIndex < ayahs.length - 1) {
+        // Only advance to the next ayah when in continuous mode
+        if (isContinuousRef.current && ayahIndex < ayahs.length - 1) {
           setTimeout(() => {
-            // Re-trigger play for next ayah
-            const nextAyah = ayahs[ayahIndex + 1];
-            if (nextAyah?.audio) {
-              setCurrentActiveAyah(ayahIndex + 1);
-              setCurrentActiveWord(0);
-              
-              const nextAudio = new Audio(nextAyah.audio);
-              if (audioRef.current) {
-                audioRef.current.pause();
-              }
-              audioRef.current = nextAudio;
-              nextAudio.play().catch(console.error);
-            }
+            // Use the ref so we always call the latest version of this
+            // function (avoids stale closure capturing old ayahs/timings)
+            playAyahAudioRef.current?.(ayahIndex + 1, true);
           }, 100);
         } else {
+          // Single-ayah mode OR last ayah reached → stop
           stopAutoHighlight();
         }
       });
@@ -389,6 +392,12 @@ const ReadingContent = () => {
     },
     [ayahs, currentActiveAyah, autoHighlight, scrollToAyah, timings, number, stopAutoHighlight]
   );
+
+  // Keep playAyahAudioRef pointing to the latest version so the ended-handler
+  // inside the closure can always call the up-to-date function
+  useEffect(() => {
+    playAyahAudioRef.current = playAyahAudio;
+  }, [playAyahAudio]);
 
   // Handle ayah click
   const handleAyahClick = useCallback(
@@ -499,7 +508,7 @@ const ReadingContent = () => {
 
       return (
         <div
-          key={ayah.number}
+          key={index}
           ref={(el) => {
             ayahRefs.current[index] = el;
           }}
@@ -660,7 +669,7 @@ const ReadingContent = () => {
 
       {/* Ayahs List */}
       {!isLoading && !errorMessage && ayahs.length > 0 && (
-        <div ref={containerRef} className="pb-24 sm:pb-32">
+        <div ref={containerRef} className="pb-24 sm:pb-32 px-2">
           {/* Bismillah Header (except for Surah 1 and 9) */}
           {type === "surah" && number !== 1 && number !== 9 && (
             <div className="text-center py-6 mb-4">
@@ -693,11 +702,11 @@ const ReadingContent = () => {
                 : "bg-gray-100 text-black"
             }`}
           >
-            {showMeaning ? "Sembunyikan" : "Tampilkan"}
+            {showMeaning ? "Sembunyikan Arti" : "Tampilkan Arti"}
           </button>
           <button
             onClick={() =>
-              autoHighlight ? stopAutoHighlight() : playAyahAudio(currentActiveAyah)
+              autoHighlight ? stopAutoHighlight() : playAyahAudio(currentActiveAyah, true)
             }
             className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition flex items-center gap-1.5 sm:gap-2 ${
               autoHighlight

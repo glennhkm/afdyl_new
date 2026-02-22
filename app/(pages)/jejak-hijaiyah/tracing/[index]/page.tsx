@@ -45,10 +45,12 @@ const HijaiyahTracingDetailPage = () => {
   const [isCompleted, setIsCompleted] = useState(isAlreadyCompleted);
   const [feedback, setFeedback] = useState<FeedbackState>({ type: null, message: "" });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorResult, setErrorResult] = useState<{ message: string; coverage: number } | null>(null);
 
-  // Lock body scroll when success modal is open
+  // Lock body scroll when any modal is open
   useEffect(() => {
-    if (showSuccessModal) {
+    if (showSuccessModal || showErrorModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -56,7 +58,7 @@ const HijaiyahTracingDetailPage = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showSuccessModal]);
+  }, [showSuccessModal, showErrorModal]);
 
   // Handle reset
   const handleReset = useCallback(() => {
@@ -131,7 +133,9 @@ const HijaiyahTracingDetailPage = () => {
         // Show success modal
         setShowSuccessModal(true);
       } else {
-        showFeedback("warning", result.message);
+        // Show error popup instead of inline feedback
+        setErrorResult({ message: result.message, coverage: result.coverage });
+        setShowErrorModal(true);
       }
     }
   };
@@ -311,7 +315,7 @@ const HijaiyahTracingDetailPage = () => {
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/50 z-100 flex items-center justify-center px-4">
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center px-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
             <div className="text-center mb-6">
               <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -347,6 +351,85 @@ const HijaiyahTracingDetailPage = () => {
                 ) : (
                   'Selesai'
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error / Incomplete Tracing Modal */}
+      {showErrorModal && errorResult && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
+            <div className="text-center mb-5">
+              {/* Progress ring */}
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
+                  <circle cx="48" cy="48" r="40" fill="none" stroke="#FEE2E2" strokeWidth="10" />
+                  <circle
+                    cx="48" cy="48" r="40"
+                    fill="none"
+                    stroke="#F97316"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 40}`}
+                    strokeDashoffset={`${2 * Math.PI * 40 * (1 - Math.min(errorResult.coverage, 0.99))}`}
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xl font-bold text-orange-500">
+                    {Math.round(errorResult.coverage * 100)}%
+                  </span>
+                </div>
+              </div>
+
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Belum Selesai</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">{errorResult.message}</p>
+            </div>
+
+            {/* Tips based on coverage */}
+            <div className={`rounded-xl p-3 mb-5 flex items-start gap-2 ${
+              errorResult.coverage < 0.3
+                ? 'bg-red-50 border border-red-200'
+                : errorResult.coverage < 0.7
+                ? 'bg-orange-50 border border-orange-200'
+                : 'bg-yellow-50 border border-yellow-200'
+            }`}>
+              <Icon
+                name={errorResult.coverage < 0.3 ? 'RiPencilLine' : 'RiInformationLine'}
+                className={`w-5 h-5 shrink-0 mt-0.5 ${
+                  errorResult.coverage < 0.3 ? 'text-red-500' : errorResult.coverage < 0.7 ? 'text-orange-500' : 'text-yellow-600'
+                }`}
+              />
+              <p className={`text-xs font-medium ${
+                errorResult.coverage < 0.3 ? 'text-red-700' : errorResult.coverage < 0.7 ? 'text-orange-700' : 'text-yellow-700'
+              }`}>
+                {errorResult.coverage < 0.3
+                  ? 'Trace semua bagian huruf, termasuk titik-titiknya ya!'
+                  : errorResult.coverage < 0.7
+                  ? 'Hampir! Pastikan semua garis huruf ter-trace dengan baik.'
+                  : 'Sedikit lagi! Periksa bagian kecil yang mungkin terlewat.'}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowErrorModal(false);
+                  handleReset();
+                }}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <Icon name="RiRefreshLine" className="w-4 h-4" />
+                Ulangi
+              </button>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <Icon name="RiPencilLine" className="w-4 h-4" />
+                Lanjutkan
               </button>
             </div>
           </div>

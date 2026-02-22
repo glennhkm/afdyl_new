@@ -19,21 +19,10 @@ import {
 } from "@/lib/services/quran-service";
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
+import { QuranReadSkeleton } from "@/components/ui/Skeleton";
 
-// Loading component - Skeleton version
-const ReadingPageLoading = () => (
-  <div className="w-full min-h-[82svh] pt-20 px-4">
-    <div className="space-y-4 animate-pulse">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="bg-white rounded-xl border-2 border-gray-100 p-4">
-          <div className="h-10 bg-[#E37100]/10 rounded mb-3" />
-          <div className="h-6 bg-gray-100 rounded mb-2" />
-          <div className="h-4 bg-gray-50 rounded w-3/4" />
-        </div>
-      ))}
-    </div>
-  </div>
-);
+// Loading component for Suspense
+const ReadingPageLoading = () => <QuranReadSkeleton />;
 
 // Optimized Settings Modal with local state for smooth slider performance
 const SettingsModal = React.memo(({ 
@@ -216,6 +205,8 @@ const ReadingContent = () => {
 
   // Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isContinuousRef = useRef<boolean>(false);
+  const playAyahAudioRef = useRef<((ayahIndex: number, continuous?: boolean) => void) | null>(null);
   const ayahRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -300,12 +291,13 @@ const ReadingContent = () => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
+    isContinuousRef.current = false;
     setAutoHighlight(false);
   }, []);
 
   // Play ayah audio
   const playAyahAudio = useCallback(
-    (ayahIndex: number) => {
+    (ayahIndex: number, continuous: boolean = false) => {
       if (ayahs.length === 0 || ayahIndex >= ayahs.length) return;
 
       const ayah = ayahs[ayahIndex];
@@ -321,6 +313,7 @@ const ReadingContent = () => {
         return;
       }
 
+      isContinuousRef.current = continuous;
       setCurrentActiveAyah(ayahIndex);
       setCurrentActiveWord(0);
       setAutoHighlight(true);
@@ -362,20 +355,9 @@ const ReadingContent = () => {
       });
 
       audio.addEventListener("ended", () => {
-        if (ayahIndex < ayahs.length - 1) {
+        if (isContinuousRef.current && ayahIndex < ayahs.length - 1) {
           setTimeout(() => {
-            const nextAyah = ayahs[ayahIndex + 1];
-            if (nextAyah?.audio) {
-              setCurrentActiveAyah(ayahIndex + 1);
-              setCurrentActiveWord(0);
-              
-              const nextAudio = new Audio(nextAyah.audio);
-              if (audioRef.current) {
-                audioRef.current.pause();
-              }
-              audioRef.current = nextAudio;
-              nextAudio.play().catch(console.error);
-            }
+            playAyahAudioRef.current?.(ayahIndex + 1, true);
           }, 100);
         } else {
           stopAutoHighlight();
@@ -389,6 +371,11 @@ const ReadingContent = () => {
     },
     [ayahs, currentActiveAyah, autoHighlight, scrollToAyah, timings, number, stopAutoHighlight]
   );
+
+  // Keep playAyahAudioRef in sync with latest function (avoids stale closure in ended listener)
+  useEffect(() => {
+    playAyahAudioRef.current = playAyahAudio;
+  }, [playAyahAudio]);
 
   // Handle ayah click
   const handleAyahClick = useCallback(
@@ -699,7 +686,7 @@ const ReadingContent = () => {
 
       {/* Ayahs List */}
       {!isLoading && !errorMessage && ayahs.length > 0 && (
-        <div ref={containerRef} className="pb-24 sm:pb-32">
+        <div ref={containerRef} className="pb-24 sm:pb-32 px-2">
           {/* Bismillah Header */}
           {type === "surah" && number !== 1 && number !== 9 && (
             <div className="text-center py-6 mb-4">
@@ -732,11 +719,11 @@ const ReadingContent = () => {
                 : "bg-gray-100 text-black"
             }`}
           >
-            {showMeaning ? "Sembunyikan" : "Terjemah"}
+            {showMeaning ? "Sembunyikan Arti" : "Tampilkan Arti"}
           </button>
           <button
             onClick={() =>
-              autoHighlight ? stopAutoHighlight() : playAyahAudio(currentActiveAyah)
+              autoHighlight ? stopAutoHighlight() : playAyahAudio(currentActiveAyah, true)
             }
             className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition flex items-center gap-1.5 sm:gap-2 ${
               autoHighlight

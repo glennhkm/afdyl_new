@@ -6,6 +6,7 @@ import { useTeacher } from "@/contexts/TeacherContext";
 import Icon from "@/components/Icon";
 import Topbar from "@/components/topbar";
 import { StudentDashboardSkeleton } from "@/components/ui/Skeleton";
+import { surahNames } from "@/lib/data/surah-names";
 
 const StudentDashboardPage = () => {
   const router = useRouter();
@@ -49,6 +50,8 @@ const StudentDashboardPage = () => {
   // Check if there's any iqra progress
   const hasIqraProgress = iqraProgress.currentJilid > 1 || iqraProgress.currentPage > 1 || iqraProgress.completedJilids.length > 0;
 
+  const quranSurahName = surahNames[quranProgress.lastSurah] || `Surah ${quranProgress.lastSurah}`;
+
   const modules = [
     {
       id: "quran",
@@ -56,7 +59,10 @@ const StudentDashboardPage = () => {
       icon: "RiBookOpenLine",
       url: "/guru/modul/quran",
       progress: hasQuranProgress
-        ? `Terakhir: Surah ${quranProgress.lastSurah} Ayat ${quranProgress.lastAyah}`
+        ? `Terakhir: ${quranSurahName} Ayat ${quranProgress.lastAyah}`
+        : null,
+      continueUrl: hasQuranProgress
+        ? `/guru/modul/quran/read?type=surah&number=${quranProgress.lastSurah}&name=${encodeURIComponent(quranSurahName)}`
         : null,
     },
     {
@@ -67,6 +73,9 @@ const StudentDashboardPage = () => {
       progress: hasIqraProgress
         ? `Terakhir: Jilid ${iqraProgress.currentJilid} Hal. ${iqraProgress.currentPage}`
         : null,
+      continueUrl: hasIqraProgress
+        ? `/guru/modul/iqra/read?volume=${iqraProgress.currentJilid}`
+        : null,
     },
     {
       id: "jejak-hijaiyah",
@@ -76,23 +85,31 @@ const StudentDashboardPage = () => {
       progress: hijaiyahProgress.completedLetters.length > 0
         ? `${hijaiyahProgress.completedLetters.length}/29 huruf selesai`
         : null,
+      continueUrl: null,
     },
     {
       id: "tebak-hijaiyah",
       title: "Tebak Hijaiyah",
       icon: "RiGamepadLine",
       url: "/tebak-hijaiyah",
+      progress: null,
+      continueUrl: null,
     },
     {
+      id: "tangkap-hijaiyah",
       title: "Tangkap Hijaiyah",
       url: "/tangkap-hijaiyah",
       icon: "RiCameraLine",
+      progress: null,
+      continueUrl: null,
     },
     {
       id: "lafal-hijaiyah",
       title: "Latihan Lafal",
       icon: "RiMicLine",
       url: "/lafal-hijaiyah",
+      progress: null,
+      continueUrl: null,
     },
   ];
 
@@ -151,11 +168,19 @@ const StudentDashboardPage = () => {
       {/* Module List - Same as student dashboard */}
       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {modules.map((module) => (
-          <button
+          <div
             key={module.id}
             onClick={() => router.push(module.url)}
             className="relative h-36 sm:h-44 md:h-48 lg:h-52 bg-background-2 rounded-3xl shadow cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 hover:-translate-y-1 duration-200 border-2 border-brown-brand/50 hover:border-brown-brand group"
           >
+            {/* Progress Badge */}
+            {module.progress && (
+              <div className="absolute top-2 right-2 text-[10px] sm:text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Icon name="RiCheckboxCircleFill" className="w-3 h-3" />
+                <span className="hidden sm:inline">{module.progress}</span>
+                <span className="sm:hidden">✓</span>
+              </div>
+            )}
             <Icon
               name={module.icon as keyof typeof import('@remixicon/react')}
               className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-brown-brand group-hover:scale-110 transition-transform"
@@ -163,13 +188,23 @@ const StudentDashboardPage = () => {
             <h2 className="text-base sm:text-lg md:text-xl lg:text-3xl font-semibold text-gray-800 text-center leading-tight">
               {module.title}
             </h2>
+            {/* Progress text on mobile */}
             {module.progress && (
-              <div className="flex items-center gap-1 text-xs text-[#E37100]">
-                <Icon name="RiCheckboxCircleFill" className="w-3.5 h-3.5" />
-                <span>{module.progress}</span>
-              </div>
+              <p className="sm:hidden text-[10px] text-emerald-600 text-center px-1">
+                {module.progress}
+              </p>
             )}
-          </button>
+            {/* Lanjutkan button */}
+            {/* {module.continueUrl && (
+              <button
+                onClick={(e) => { e.stopPropagation(); router.push(module.continueUrl!); }}
+                className="absolute bottom-3 text-[10px] sm:text-xs text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full hover:bg-emerald-200 transition-colors flex items-center gap-1"
+              >
+                <Icon name="RiPlayCircleLine" className="w-3 h-3" />
+                Lanjutkan
+              </button>
+            )} */}
+          </div>
         ))}
       </div>
     </div>

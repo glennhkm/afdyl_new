@@ -23,6 +23,7 @@ export interface Student {
 export interface QuranProgress {
   lastSurah: number;
   lastAyah: number;
+  lastSurahName: string;
   completedSurahs: number[];
 }
 

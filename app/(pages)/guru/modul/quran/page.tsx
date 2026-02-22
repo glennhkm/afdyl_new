@@ -12,13 +12,15 @@ import {
 } from "@/lib/services/quran-service";
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
+import { QuranPageSkeleton } from "@/components/ui/Skeleton";
+import { surahNames } from "@/lib/data/surah-names";
 
 type TabType = "surah" | "juz";
 
 const TeacherQuranPage = () => {
   const router = useRouter();
   const { currentRoom, currentStudent } = useTeacher();
-  
+
   const [activeTab, setActiveTab] = useState<TabType>("surah");
   const [surahs, setSurahs] = useState<Surah[]>([]);
   const [juzs, setJuzs] = useState<Juz[]>([]);
@@ -28,7 +30,9 @@ const TeacherQuranPage = () => {
 
   // Get progress directly from currentStudent
   const quranProgress = currentStudent?.quranProgress;
-  const hasQuranProgress = quranProgress && (quranProgress.lastSurah > 1 || quranProgress.lastAyah > 1);
+  const hasQuranProgress =
+    quranProgress &&
+    (quranProgress.lastSurah > 1 || quranProgress.lastAyah > 1);
 
   // Redirect if no student selected
   useEffect(() => {
@@ -121,14 +125,8 @@ const TeacherQuranPage = () => {
     const number = item.number || index + 1;
 
     router.push(
-      `/guru/modul/quran/read?type=${activeTab}&number=${number}&name=${encodeURIComponent(itemName)}`
+      `/guru/modul/quran/read?type=${activeTab}&number=${number}&name=${encodeURIComponent(itemName)}`,
     );
-  };
-
-  // Check if item is last read
-  const isLastReadItem = (item: Surah | Juz) => {
-    if (!quranProgress || activeTab !== "surah") return false;
-    return item.number === quranProgress.lastSurah;
   };
 
   // Highlight search matches
@@ -156,17 +154,45 @@ const TeacherQuranPage = () => {
 
   return (
     <div className="w-full min-h-[82svh] overflow-x-hidden lg:px-6">
-      <Topbar title="Al-Qur'an" onBackClick={() => router.push("/guru/siswa")} />
+      <Topbar
+        title="Al-Qur'an"
+        onBackClick={() => router.push("/guru/siswa")}
+      />
 
       {/* Teacher: Student Info Banner */}
-      <div className="bg-[#E37100]/10 border-2 border-[#E37100]/30 rounded-xl p-3 mb-4 flex items-center justify-between">
+      <div className="bg-emerald-600/10 border-2 border-emerald-600/30 rounded-xl p-3 mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon name="RiUserLine" className="w-5 h-5 text-[#E37100]" />
-          <span className="text-[#E37100] font-medium">{currentStudent.name}</span>
+          <Icon name="RiUserLine" className="w-5 h-5 text-emerald-600" />
+          <span className="text-emerald-600 font-medium">
+            {currentStudent.name}
+          </span>
         </div>
         {hasQuranProgress && (
-          <div className="text-xs text-[#E37100] bg-[#E37100]/10 px-2 py-1 rounded-full">
-            Terakhir: Surah {quranProgress.lastSurah} Ayat {quranProgress.lastAyah}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Icon
+                name="RiBookmarkFill"
+                className="w-5 h-5 text-emerald-600"
+              />
+              <span className="text-emerald-700 font-medium text-sm sm:text-base">
+                Terakhir: {surahNames[quranProgress.lastSurah]} Ayat{" "}
+                {quranProgress.lastAyah}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                const surahName =
+                  surahNames[quranProgress.lastSurah] ||
+                  `Surah ${quranProgress.lastSurah}`;
+                router.push(
+                  `/guru/modul/quran/read?type=surah&number=${quranProgress.lastSurah}&name=${encodeURIComponent(surahName)}`,
+                );
+              }}
+              className="text-xs sm:text-sm text-emerald-600 bg-emerald-200 px-3 py-1 rounded-full hover:bg-emerald-200/80 transition-colors flex items-center gap-1"
+            >
+              <Icon name="RiPlayCircleLine" className="w-3.5 h-3.5" />
+              Lanjutkan
+            </button>
           </div>
         )}
       </div>
@@ -230,33 +256,21 @@ const TeacherQuranPage = () => {
       {/* Content Area */}
       <div className="rounded-t-3xl min-h-[60vh]">
         {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 px-1 py-4 animate-pulse">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border-2 border-gray-100 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#E37100]/10 rounded-full" />
-                    <div>
-                      <div className="h-5 w-24 bg-gray-200 rounded mb-2" />
-                      <div className="h-3 w-32 bg-gray-100 rounded" />
-                    </div>
-                  </div>
-                  <div className="h-8 w-16 bg-[#E37100]/10 rounded" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {isLoading && <QuranPageSkeleton />}
 
         {/* Error State */}
         {!isLoading && errorMessage && (
           <div className="flex flex-col items-center justify-center py-12 sm:py-20">
-            <Icon name="RiCloudOffLine" className="w-12 h-12 sm:w-16 sm:h-16 text-red-500" />
+            <Icon
+              name="RiCloudOffLine"
+              className="w-12 h-12 sm:w-16 sm:h-16 text-red-500"
+            />
             <h3 className="mt-3 sm:mt-4 text-lg sm:text-xl font-semibold text-black text-center">
               Tidak dapat terhubung ke server
             </h3>
-            <p className="mt-2 text-sm sm:text-base text-black/70 text-center px-4 sm:px-8">{errorMessage}</p>
+            <p className="mt-2 text-sm sm:text-base text-black/70 text-center px-4 sm:px-8">
+              {errorMessage}
+            </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6 w-full px-4 sm:w-auto">
               <button
                 onClick={loadSurahs}
@@ -298,13 +312,17 @@ const TeacherQuranPage = () => {
         )}
 
         {/* Search Results Count */}
-        {!isLoading && !errorMessage && searchQuery && currentList.length > 0 && (
-          <div className="mb-3 sm:mb-4 px-3 sm:px-4 py-2 bg-[#D4C785]/30 rounded-lg">
-            <p className="text-sm sm:text-base text-black/70 italic">
-              {currentList.length} hasil ditemukan untuk &quot;{searchQuery}&quot;
-            </p>
-          </div>
-        )}
+        {!isLoading &&
+          !errorMessage &&
+          searchQuery &&
+          currentList.length > 0 && (
+            <div className="mb-3 sm:mb-4 px-3 sm:px-4 py-2 bg-[#D4C785]/30 rounded-lg">
+              <p className="text-sm sm:text-base text-black/70 italic">
+                {currentList.length} hasil ditemukan untuk &quot;{searchQuery}
+                &quot;
+              </p>
+            </div>
+          )}
 
         {/* List Items */}
         {!isLoading && !errorMessage && currentList.length > 0 && (
@@ -315,21 +333,16 @@ const TeacherQuranPage = () => {
                 ? (item as Surah).englishName || `Surah ${index + 1}`
                 : (item as Juz).name || `Juz ${index + 1}`;
               const surahItem = item as Surah;
-              const lastRead = isLastReadItem(item);
 
               return (
                 <button
                   key={item.number}
                   onClick={() => handleItemClick(item, index)}
-                  className={`w-full bg-white border rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-5 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group ${
-                    lastRead ? "border-[#E37100] border-2 ring-2 ring-[#E37100]/20" : "border-[#D9D9D9]"
-                  }`}
+                  className="w-full bg-white border border-[#D9D9D9] rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-5 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group"
                 >
                   <div className="flex items-center gap-3 sm:gap-4">
                     {/* Number Badge */}
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm lg:text-base shrink-0 ${
-                      lastRead ? "bg-[#E37100] text-white" : "bg-foreground-2 text-black"
-                    }`}>
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-foreground-2 rounded-full flex items-center justify-center text-black font-bold text-xs sm:text-sm lg:text-base shrink-0">
                       {item.number}
                     </div>
                     <div className="text-left">
@@ -338,20 +351,14 @@ const TeacherQuranPage = () => {
                       </h3>
                       {isSurah && surahItem.numberOfAyahs > 0 && (
                         <p className="text-black/60 text-xs sm:text-sm">
-                          {surahItem.numberOfAyahs} Ayat • {surahItem.revelationType === "Meccan" ? "Makkiyah" : "Madaniyah"}
-                          {lastRead && <span className="text-[#E37100] font-medium"> • Terakhir dibaca</span>}
+                          {surahItem.numberOfAyahs} Ayat •{" "}
+                          {surahItem.revelationType === "Meccan"
+                            ? "Makkiyah"
+                            : "Madaniyah"}
                         </p>
                       )}
                     </div>
                   </div>
-                  
-                  {/* Teacher: Last read badge */}
-                  {lastRead && (
-                    <div className="flex items-center gap-1 bg-[#E37100] text-white px-2 py-1 rounded-full text-xs">
-                      <Icon name="RiBookmarkFill" className="w-3 h-3" />
-                      <span>Ayat {quranProgress?.lastAyah}</span>
-                    </div>
-                  )}
                 </button>
               );
             })}

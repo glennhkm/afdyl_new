@@ -139,7 +139,7 @@ const QuranPage = () => {
 
   return (
     <div className="w-full min-h-[82svh] overflow-x-hidden">
-      <Topbar title="Al-Qur'an" />
+      <Topbar title="Al-Qur'an"/>
 
       {/* Progress Banner */}
       {hasQuranProgress && (
