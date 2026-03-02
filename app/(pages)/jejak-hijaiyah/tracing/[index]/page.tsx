@@ -122,10 +122,14 @@ const HijaiyahTracingDetailPage = () => {
   const handlePlaySound = () => {
     const audioFileName = audioMapping[letter];
     if (audioFileName) {
-      if (audioRef.current) {
-        audioRef.current.pause();
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
+        audioRef.current.volume = 0.8;
       }
-      audioRef.current = new Audio(`/audio/${audioFileName}.m4a`);
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.src = `/audio/${audioFileName}.m4a`;
+      audioRef.current.load();
       audioRef.current.play().catch(console.error);
     }
   };

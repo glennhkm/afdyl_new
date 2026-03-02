@@ -52,6 +52,7 @@ const TebakHijaiyahPage = () => {
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const feedbackAudioRef = useRef<HTMLAudioElement | null>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -106,12 +107,17 @@ const TebakHijaiyahPage = () => {
     const letter = hijaiyahGameLetters[currentAudioIndex];
     if (!letter) { setIsPlayingAudio(false); return; }
 
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-
-    const audio = new Audio(`/audio/${letter.audio}`);
-    audioRef.current = audio;
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.volume = 0.8;
+    }
+    const audio = audioRef.current;
+    audio.pause();
+    audio.currentTime = 0;
     audio.onended = () => setIsPlayingAudio(false);
     audio.onerror = () => setIsPlayingAudio(false);
+    audio.src = `/audio/${letter.audio}`;
+    audio.load();
     audio.play().catch(() => setIsPlayingAudio(false));
   }, [currentAudioIndex, isPlayingAudio, isGameCompleted]);
 
@@ -138,8 +144,16 @@ const TebakHijaiyahPage = () => {
     // Arrow hint always shown after answer — prompts user to tap audio again
     setShowArrowHint(true);
 
-    const feedbackAudio = new Audio(`/audio/${isCorrect ? "benar" : "salah"}.m4a`);
-    feedbackAudio.play().catch(console.error);
+    // Play benar/salah feedback using persistent element
+    if (!feedbackAudioRef.current) {
+      feedbackAudioRef.current = new Audio();
+      feedbackAudioRef.current.volume = 0.8;
+    }
+    feedbackAudioRef.current.pause();
+    feedbackAudioRef.current.currentTime = 0;
+    feedbackAudioRef.current.src = `/audio/${isCorrect ? "benar" : "salah"}.m4a`;
+    feedbackAudioRef.current.load();
+    feedbackAudioRef.current.play().catch(console.error);
 
     if (isCorrect) {
       const newRemaining = availableAudioIndices.filter((i) => i !== currentAudioIndex);
