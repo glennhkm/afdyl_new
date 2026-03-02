@@ -14,6 +14,7 @@ import {
   IqraPage,
   IqraRow,
 } from "@/lib/services/iqra-service";
+import BreakReminder from "@/components/guru/BreakReminder";
 
 // Loading component - Skeleton version
 const LoadingSpinner = () => (
@@ -660,7 +661,10 @@ const TeacherIqraReadingContent = () => {
         onClose={handleCloseModal}
         isPlaying={isPlaying}
         onPlayAudio={handlePlayAudio}
-      />      
+      />
+
+      {/* Break Reminder - setiap 5 menit */}
+      <BreakReminder />
     </div>
   );
 };

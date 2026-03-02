@@ -14,6 +14,7 @@ import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 import { QuranPageSkeleton } from "@/components/ui/Skeleton";
 import { surahNames } from "@/lib/data/surah-names";
+import BreakReminder from "@/components/guru/BreakReminder";
 
 type TabType = "surah" | "juz";
 
@@ -365,6 +366,9 @@ const TeacherQuranPage = () => {
           </div>
         )}
       </div>
+
+      {/* Break Reminder - setiap 5 menit */}
+      <BreakReminder />
     </div>
   );
 };

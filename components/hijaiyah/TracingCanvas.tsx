@@ -44,6 +44,14 @@ const TracingCanvas = forwardRef<TracingCanvasRef, TracingCanvasProps>(
     const [canvasSize, setCanvasSize] = useState({ width: 350, height: 350 });
     const strokeWidth = 36;
 
+    // ── Cached offscreen canvases (avoid GC pressure during drawing) ──
+    const strokeMaskRef = useRef<HTMLCanvasElement | null>(null);
+    const staticCacheRef = useRef<{
+      key: string;
+      overlay: HTMLCanvasElement;
+      shadow: HTMLCanvasElement;
+    } | null>(null);
+
     // Load letter data and background image
     useEffect(() => {
       const loadData = async () => {
@@ -60,6 +68,8 @@ const TracingCanvas = forwardRef<TracingCanvasRef, TracingCanvasProps>(
         }
       };
 
+      // Invalidate static cache when letter changes
+      staticCacheRef.current = null;
       loadData();
     }, [letter]);
 
@@ -78,98 +88,191 @@ const TracingCanvas = forwardRef<TracingCanvasRef, TracingCanvasProps>(
       return () => window.removeEventListener("resize", updateSize);
     }, []);
 
-    // Draw canvas
+    // Draw canvas — stencil / groove effect
     const drawCanvas = useCallback(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Clear canvas
-      ctx.fillStyle = "#E7E9D1"; // foreground-2 color from globals.css
-      ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+      const { width: w, height: h } = canvasSize;
+      const hasImage = !!backgroundImage;
 
-      // Draw background image (semi-transparent)
-      if (backgroundImage) {
-        // Calculate scaling to fit the image properly
-        const imgAspect = backgroundImage.width / backgroundImage.height;
-        const canvasAspect = canvasSize.width / canvasSize.height;
-        
-        let scaledWidth: number, scaledHeight: number;
-        let offsetX: number, offsetY: number;
+      // ── Calculate letter positioning ──
+      let sw = 0, sh = 0, ox = 0, oy = 0;
 
+      if (hasImage) {
         if (letterData) {
-          // Use SVG viewBox for positioning if available
           const { viewBox } = letterData;
-          const scaleX = canvasSize.width / viewBox.width;
-          const scaleY = canvasSize.height / viewBox.height;
+          const scaleX = w / viewBox.width;
+          const scaleY = h / viewBox.height;
           const scale = Math.min(scaleX, scaleY);
-
-          scaledWidth = viewBox.width * scale;
-          scaledHeight = viewBox.height * scale;
-          offsetX = (canvasSize.width - scaledWidth) / 2;
-          offsetY = (canvasSize.height - scaledHeight) / 2;
+          sw = viewBox.width * scale;
+          sh = viewBox.height * scale;
+          ox = (w - sw) / 2;
+          oy = (h - sh) / 2;
         } else {
-          // Fallback to image dimensions with padding
+          const imgAspect = backgroundImage!.width / backgroundImage!.height;
+          const canvasAspect = w / h;
           const padding = 40;
-          const availableWidth = canvasSize.width - padding * 2;
-          const availableHeight = canvasSize.height - padding * 2;
-          
+          const availW = w - padding * 2;
+          const availH = h - padding * 2;
           if (imgAspect > canvasAspect) {
-            scaledWidth = availableWidth;
-            scaledHeight = availableWidth / imgAspect;
+            sw = availW;
+            sh = availW / imgAspect;
           } else {
-            scaledHeight = availableHeight;
-            scaledWidth = availableHeight * imgAspect;
+            sh = availH;
+            sw = availH * imgAspect;
           }
-          
-          offsetX = (canvasSize.width - scaledWidth) / 2;
-          offsetY = (canvasSize.height - scaledHeight) / 2;
+          ox = (w - sw) / 2;
+          oy = (h - sh) / 2;
         }
+      }
 
-        ctx.globalAlpha = 0.4;
-        ctx.drawImage(
-          backgroundImage,
-          offsetX,
-          offsetY,
-          scaledWidth,
-          scaledHeight
-        );
+      // ── Build / cache static layers (overlay + inner shadow) ──
+      // These only change when the letter or canvas size changes, NOT per stroke.
+      let overlay: HTMLCanvasElement | null = null;
+      let shadow: HTMLCanvasElement | null = null;
+
+      if (hasImage) {
+        const cacheKey = `${w}_${h}_${backgroundImage!.src}`;
+
+        if (staticCacheRef.current?.key === cacheKey) {
+          overlay = staticCacheRef.current.overlay;
+          shadow = staticCacheRef.current.shadow;
+        } else {
+          // ── Raised overlay (elevated surface around the groove) ──
+          overlay = document.createElement("canvas");
+          overlay.width = w;
+          overlay.height = h;
+          const oCtx = overlay.getContext("2d")!;
+          oCtx.fillStyle = "#EAECDA"; // raised surface (lighter)
+          oCtx.fillRect(0, 0, w, h);
+          // Cut out the letter groove (destination-out removes where letter has alpha)
+          oCtx.globalCompositeOperation = "destination-out";
+          oCtx.drawImage(backgroundImage!, ox, oy, sw, sh);
+
+          // ── Inner shadow (depth cue at groove edges) ──
+          // 1. Create a "frame" = black everywhere, transparent letter hole
+          const frame = document.createElement("canvas");
+          frame.width = w;
+          frame.height = h;
+          const fCtx = frame.getContext("2d")!;
+          fCtx.fillStyle = "#000000";
+          fCtx.fillRect(0, 0, w, h);
+          fCtx.globalCompositeOperation = "destination-out";
+          fCtx.drawImage(backgroundImage!, ox, oy, sw, sh);
+
+          // 2. Draw the blurred frame clipped to the letter area only
+          //    → black fades inward from groove edges = inner shadow
+          shadow = document.createElement("canvas");
+          shadow.width = w;
+          shadow.height = h;
+          const sCtx = shadow.getContext("2d")!;
+          sCtx.drawImage(backgroundImage!, ox, oy, sw, sh); // letter as clip mask
+          sCtx.globalCompositeOperation = "source-atop";
+          sCtx.filter = "blur(5px)";
+          sCtx.drawImage(frame, 0, 0);
+          sCtx.filter = "none";
+
+          staticCacheRef.current = { key: cacheKey, overlay, shadow };
+        }
+      }
+
+      // ═══════════════════════════════════════════
+      //  DRAW PIPELINE
+      // ═══════════════════════════════════════════
+
+      // ── STEP 1: Groove floor (recessed channel base color) ──
+      ctx.fillStyle = "#D6D8C2";
+      ctx.fillRect(0, 0, w, h);
+
+      // ── STEP 2: Letter guide image in the groove (subtle) ──
+      if (hasImage) {
+        ctx.globalAlpha = 0.35;
+        ctx.drawImage(backgroundImage!, ox, oy, sw, sh);
         ctx.globalAlpha = 1;
       }
 
-      // Draw all completed traces
-      allTraces.forEach((trace, index) => {
-        if (trace.length < 2) return;
-
-        const isValidated = validatedTraces[index] || false;
-        ctx.strokeStyle = isValidated ? "#16a34a" : "#1A1A1A"; // green or softBlack
-        ctx.lineWidth = strokeWidth;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-
-        ctx.beginPath();
-        ctx.moveTo(trace[0].x, trace[0].y);
-        for (let i = 1; i < trace.length; i++) {
-          ctx.lineTo(trace[i].x, trace[i].y);
+      // ── STEP 3: User strokes MASKED to letter groove ──
+      // Uses compositing: draw letter shape → source-atop → draw strokes
+      // Result: strokes only visible where the letter has alpha (the groove)
+      if (hasImage) {
+        // Re-use or create the stroke mask canvas
+        let tmp = strokeMaskRef.current;
+        if (!tmp || tmp.width !== w || tmp.height !== h) {
+          tmp = document.createElement("canvas");
+          tmp.width = w;
+          tmp.height = h;
+          strokeMaskRef.current = tmp;
         }
-        ctx.stroke();
-      });
+        const tCtx = tmp.getContext("2d")!;
+        tCtx.clearRect(0, 0, w, h);
 
-      // Draw current trace
-      if (currentTrace.length >= 2) {
-        ctx.strokeStyle = "#1A1A1A"; // softBlack
-        ctx.lineWidth = strokeWidth;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+        // Letter shape as the alpha mask
+        tCtx.globalCompositeOperation = "source-over";
+        tCtx.drawImage(backgroundImage!, ox, oy, sw, sh);
 
-        ctx.beginPath();
-        ctx.moveTo(currentTrace[0].x, currentTrace[0].y);
-        for (let i = 1; i < currentTrace.length; i++) {
-          ctx.lineTo(currentTrace[i].x, currentTrace[i].y);
-        }
-        ctx.stroke();
+        // source-atop: subsequent draws only appear where destination has alpha
+        tCtx.globalCompositeOperation = "source-atop";
+
+        // Helper: draw a single trace
+        const drawTrace = (trace: Point[], color: string) => {
+          if (trace.length < 2) return;
+          tCtx.strokeStyle = color;
+          tCtx.lineWidth = strokeWidth;
+          tCtx.lineCap = "round";
+          tCtx.lineJoin = "round";
+          tCtx.beginPath();
+          tCtx.moveTo(trace[0].x, trace[0].y);
+          for (let i = 1; i < trace.length; i++) {
+            tCtx.lineTo(trace[i].x, trace[i].y);
+          }
+          tCtx.stroke();
+        };
+
+        // Draw all saved traces
+        allTraces.forEach((trace, i) =>
+          drawTrace(trace, validatedTraces[i] ? "#16a34a" : "#1A1A1A")
+        );
+        // Draw the current in-progress trace
+        drawTrace(currentTrace, "#1A1A1A");
+
+        // Composite masked strokes onto main canvas
+        tCtx.globalCompositeOperation = "source-over";
+        ctx.drawImage(tmp, 0, 0);
+      } else {
+        // Fallback: no image loaded yet — draw strokes directly (no masking)
+        const drawTrace = (trace: Point[], color: string) => {
+          if (trace.length < 2) return;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = strokeWidth;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.beginPath();
+          ctx.moveTo(trace[0].x, trace[0].y);
+          for (let i = 1; i < trace.length; i++) {
+            ctx.lineTo(trace[i].x, trace[i].y);
+          }
+          ctx.stroke();
+        };
+
+        allTraces.forEach((trace, i) =>
+          drawTrace(trace, validatedTraces[i] ? "#16a34a" : "#1A1A1A")
+        );
+        drawTrace(currentTrace, "#1A1A1A");
+      }
+
+      // ── STEP 4: Raised overlay (elevated surface around the groove) ──
+      if (overlay) {
+        ctx.drawImage(overlay, 0, 0);
+      }
+
+      // ── STEP 5: Inner shadow (subtle depth cue at groove edges) ──
+      if (shadow) {
+        ctx.globalAlpha = 0.15;
+        ctx.drawImage(shadow, 0, 0);
+        ctx.globalAlpha = 1;
       }
     }, [
       canvasSize,
@@ -325,10 +428,15 @@ const TracingCanvas = forwardRef<TracingCanvasRef, TracingCanvasProps>(
     return (
       <div
         ref={containerRef}
-        className={`w-full bg-foreground-2 mx-auto rounded-2xl overflow-hidden shadow-lg flex justify-center items-center ${
-          isCompleted ? "ring-4 ring-green-500 ring-opacity-50" : ""
+        className={`w-full mx-auto rounded-2xl overflow-hidden flex justify-center items-center ${
+          isCompleted
+            ? "ring-4 ring-green-500 ring-opacity-50 shadow-lg"
+            : "shadow-[inset_0_2px_6px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.1)]"
         }`}
-        style={{ touchAction: "none" }}
+        style={{
+          touchAction: "none",
+          background: "#EAECDA", // matches the raised overlay surface color
+        }}
       >
         <canvas
           ref={canvasRef}

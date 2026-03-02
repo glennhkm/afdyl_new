@@ -20,6 +20,7 @@ import {
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 import { QuranReadSkeleton } from "@/components/ui/Skeleton";
+import BreakReminder from "@/components/guru/BreakReminder";
 
 // Loading component for Suspense
 const ReadingPageLoading = () => <QuranReadSkeleton />;
@@ -835,6 +836,9 @@ const ReadingContent = () => {
           onClose={() => setShowSettings(false)}
         />
       )}
+
+      {/* Break Reminder - setiap 5 menit */}
+      <BreakReminder />
     </div>
   );
 };

@@ -325,8 +325,8 @@ const TebakHijaiyahPage = () => {
               style={{ width: `${progress * 100}%` }}
             />
           </div>
-          <div className={`p-1.5 sm:p-2 rounded-lg ${progress >= 1 ? "bg-[#E37100]" : "bg-gray-300"}`}>
-            <span className="text-base sm:text-lg">🏁</span>
+          <div className={`p-1.5 sm:p-2 rounded-lg ${progress >= 1 ? "bg-[#E37100]" : ""}`}>
+            <span className="text-lg sm:text-xl">🏁</span>
           </div>
         </div>
 
@@ -389,7 +389,7 @@ const TebakHijaiyahPage = () => {
 
           <div
             ref={scrollContainerRef}
-            className="cards-scroll w-full flex gap-5 sm:gap-7 overflow-x-auto px-8 sm:px-16 pb-2"
+            className="cards-scroll w-full flex gap-5 sm:gap-7 overflow-x-auto px-8 sm:px-16 pb-6"
             style={{
               scrollSnapType: "x mandatory",
               WebkitOverflowScrolling: "touch",
@@ -422,7 +422,7 @@ const TebakHijaiyahPage = () => {
             ))}
           </div>
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-tertiary-orange">
             Geser kartu ke atas kotak untuk menjawab
           </p>
         </div>

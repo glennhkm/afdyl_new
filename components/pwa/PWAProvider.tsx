@@ -56,7 +56,7 @@ const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
   // Compute standalone mode synchronously — no effect needed
   const initialStandalone = useMemo(() => {
     if (!isClient) return false;
-    if (process.env.NODE_ENV === "development") return true;
+    // if (process.env.NODE_ENV === "development") return true;
     return checkStandaloneMode();
   }, [isClient]);
 

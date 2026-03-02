@@ -6,6 +6,7 @@ import { useTeacher } from "@/contexts/TeacherContext";
 import Topbar from "@/components/topbar";
 import Icon from "@/components/Icon";
 import { getAllVolumes, IqraVolumeInfo } from "@/lib/services/iqra-service";
+import BreakReminder from "@/components/guru/BreakReminder";
 
 const TeacherIqraPage = () => {
   const router = useRouter();
@@ -164,6 +165,9 @@ const TeacherIqraPage = () => {
           </li>
         </ul>
       </div>
+
+      {/* Break Reminder - setiap 5 menit */}
+      <BreakReminder />
     </div>
   );
 };

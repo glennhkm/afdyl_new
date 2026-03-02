@@ -18,17 +18,42 @@ declare global {
 
 // ── Feature data ─────────────────────────────────────────────────────────────
 const FEATURES = [
-  { icon: "RiBookOpenLine" as const, title: "Baca Al-Qur'an", desc: "Membaca & mendengar", color: "#E37100", bg: "#FFF3E6" },
-  { icon: "RiBookReadLine" as const, title: "Baca Iqra'", desc: "Belajar dari dasar", color: "#14AE5C", bg: "#E8F8EF" },
-  { icon: "RiMicLine" as const, title: "Lafal Hijaiyah", desc: "Latihan pelafalan", color: "#7C3AED", bg: "#F0EBFF" },
-  { icon: "RiEdit2Line" as const, title: "Jejak Hijaiyah", desc: "Menelusuri huruf", color: "#2DD4BF", bg: "#E6FAF7" },
-  { icon: "RiGamepadLine" as const, title: "Tebak Hijaiyah", desc: "Tebak dari suara", color: "#EC4899", bg: "#FDE8F3" },
-  { icon: "RiHand" as const, title: "Tangkap Hijaiyah", desc: "Tangkap huruf jatuh", color: "#F59E0B", bg: "#FEF6E0" },
+  {
+    icon: "RiBookOpenLine" as const,
+    title: "Baca Al-Qur'an",
+    desc: "Membaca & mendengar",
+  },
+  {
+    icon: "RiBookReadLine" as const,
+    title: "Baca Iqra'",
+    desc: "Belajar dari dasar",
+  },
+  {
+    icon: "RiMicLine" as const,
+    title: "Lafal Hijaiyah",
+    desc: "Latihan pelafalan",
+  },
+  {
+    icon: "RiEdit2Line" as const,
+    title: "Jejak Hijaiyah",
+    desc: "Menelusuri huruf",
+  },
+  {
+    icon: "RiGamepadLine" as const,
+    title: "Tebak Hijaiyah",
+    desc: "Tebak dari suara",
+  },
+  {
+    icon: "RiHand" as const,
+    title: "Tangkap Hijaiyah",
+    desc: "Tangkap huruf jatuh",
+  },
 ];
 
 // ── Component ────────────────────────────────────────────────────────────────
 const InstallPrompt: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [justInstalled, setJustInstalled] = useState(false);
 
@@ -89,23 +114,53 @@ const InstallPrompt: React.FC = () => {
         <div className="absolute top-2/3 left-6 w-24 h-24 rounded-full bg-[#14AE5C]/7" />
 
         {/* Floating emojis */}
-        <span className="absolute top-6 left-7 text-2xl sm:text-3xl opacity-70" style={{ animation: "pwa-float 4.2s ease-in-out infinite" }}>⭐</span>
-        <span className="absolute top-14 right-10 text-xl sm:text-2xl opacity-60" style={{ animation: "pwa-float 5s ease-in-out 0.6s infinite" }}>🌙</span>
-        <span className="absolute top-44 left-10 text-lg opacity-50" style={{ animation: "pwa-float 3.6s ease-in-out 1.1s infinite" }}>✨</span>
-        <span className="absolute bottom-52 right-7 text-xl opacity-50" style={{ animation: "pwa-float 4.6s ease-in-out 0.4s infinite" }}>📖</span>
-        <span className="absolute bottom-36 left-5 text-lg opacity-40" style={{ animation: "pwa-float 3.9s ease-in-out 1.6s infinite" }}>🕌</span>
-        <span className="absolute top-72 right-16 text-base opacity-40" style={{ animation: "pwa-float 5.4s ease-in-out 2s infinite" }}>🌟</span>
+        <span
+          className="absolute top-6 left-7 text-2xl sm:text-3xl opacity-70"
+          style={{ animation: "pwa-float 4.2s ease-in-out infinite" }}
+        >
+          ⭐
+        </span>
+        <span
+          className="absolute top-14 right-10 text-xl sm:text-2xl opacity-60"
+          style={{ animation: "pwa-float 5s ease-in-out 0.6s infinite" }}
+        >
+          🌙
+        </span>
+        <span
+          className="absolute top-44 left-10 text-lg opacity-50"
+          style={{ animation: "pwa-float 3.6s ease-in-out 1.1s infinite" }}
+        >
+          ✨
+        </span>
+        <span
+          className="absolute bottom-52 right-7 text-xl opacity-50"
+          style={{ animation: "pwa-float 4.6s ease-in-out 0.4s infinite" }}
+        >
+          📖
+        </span>
+        <span
+          className="absolute bottom-36 left-5 text-lg opacity-40"
+          style={{ animation: "pwa-float 3.9s ease-in-out 1.6s infinite" }}
+        >
+          🕌
+        </span>
+        <span
+          className="absolute top-72 right-16 text-base opacity-40"
+          style={{ animation: "pwa-float 5.4s ease-in-out 2s infinite" }}
+        >
+          🌟
+        </span>
       </div>
 
       {/* ═══ Main content ═══ */}
-      <div className="relative min-h-screen flex flex-col items-center px-6 py-10 sm:py-14">
+      <div className="relative min-h-screen  flex flex-col items-center justify-center px-6 py-10 sm:py-14">
         {/* ── Hero ── */}
         <div
-          className="flex flex-col items-center text-center mt-2 sm:mt-6"
+          className="flex flex-col items-center text-center"
           style={{ animation: "pwa-fade-up 0.6s ease-out forwards" }}
         >
           {/* App icon */}
-          <div className="relative mb-5">
+          <div className="relative mb-5 flex gap-6 items-center">
             <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-[1.75rem] shadow-xl overflow-hidden ring-4 ring-white/80">
               <Image
                 src="/icons/icon-192x192.png"
@@ -122,14 +177,15 @@ const InstallPrompt: React.FC = () => {
             >
               ✨
             </span>
+            <div className="flex flex-col gap-2 text-start">
+              <h1 className="text-4xl sm:text-5xl font-bold text-[#C98151] tracking-tight">
+                AFDYL
+              </h1>
+              <p className="text-lg sm:text-xl font-semibold text-[#E37100] mt-1">
+                Al-Qur&apos;an for Dyslexia
+              </p>
+            </div>
           </div>
-
-          <h1 className="text-4xl sm:text-5xl font-bold text-[#C98151] tracking-tight">
-            AFDYL
-          </h1>
-          <p className="text-lg sm:text-xl font-semibold text-[#E37100] mt-1">
-            Al-Qur&apos;an for Dyslexia
-          </p>
           <p className="text-sm sm:text-base text-gray-500 mt-3 max-w-xs leading-relaxed">
             Media pembelajaran interaktif Al-Qur&apos;an dan Iqra&apos; untuk
             anak-anak dengan disleksia
@@ -149,17 +205,19 @@ const InstallPrompt: React.FC = () => {
             {FEATURES.map((f, i) => (
               <div
                 key={f.title}
-                className="rounded-2xl p-3 sm:p-4 text-center shadow-sm transition-transform duration-200 hover:scale-105"
+                className="rounded-2xl p-3 sm:p-4 text-center shadow-sm transition-transform duration-200 hover:scale-105 bg-white/70 border border-[#E8DCC8]"
                 style={{
-                  backgroundColor: f.bg,
                   animation: `pwa-fade-up 0.45s ease-out ${0.3 + i * 0.07}s both`,
                 }}
               >
                 <div
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mx-auto mb-1.5 shadow-sm"
-                  style={{ backgroundColor: `${f.color}20` }}
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mx-auto mb-1.5 shadow-sm bg-[#F5EDE1]"
                 >
-                  <Icon name={f.icon} color={f.color} className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <Icon
+                    name={f.icon}
+                    color="#C98151"
+                    className="w-5 h-5 sm:w-6 sm:h-6"
+                  />
                 </div>
                 <p className="text-[11px] sm:text-xs font-bold text-gray-700 leading-tight">
                   {f.title}
@@ -189,12 +247,14 @@ const InstallPrompt: React.FC = () => {
           {/* Platform hints */}
           {isIOS && !deferredPrompt && (
             <p className="text-xs text-gray-400 mt-3.5 text-center max-w-xs">
-              Ketuk tombol di atas untuk melihat panduan instalasi di perangkat iOS
+              Ketuk tombol di atas untuk melihat panduan instalasi di perangkat
+              iOS
             </p>
           )}
           {!isIOS && !deferredPrompt && (
             <p className="text-xs text-gray-400 mt-3.5 text-center max-w-xs">
-              Gunakan browser Chrome, Edge, atau Samsung Internet untuk menginstall
+              Gunakan browser Chrome, Edge, atau Samsung Internet untuk
+              menginstall
             </p>
           )}
           {deferredPrompt && (
@@ -206,7 +266,7 @@ const InstallPrompt: React.FC = () => {
 
         {/* ── Footer ── */}
         <div className="mt-auto pt-10 pb-4 text-center">
-          <p className="text-[11px] text-gray-300">
+          <p className="text-[11px] text-gray-600">
             © {new Date().getFullYear()} Afdyl · Al-Qur&apos;an for Dyslexia
           </p>
         </div>
@@ -223,7 +283,9 @@ const InstallPrompt: React.FC = () => {
             style={{ animation: "pwa-bounce-in 0.4s ease-out" }}
           >
             <div className="flex justify-between items-center mb-5">
-              <h2 className="text-xl font-bold text-gray-800">Cara Install di iOS</h2>
+              <h2 className="text-xl font-bold text-gray-800">
+                Cara Install di iOS
+              </h2>
               <button
                 onClick={() => setShowIOSGuide(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -236,7 +298,12 @@ const InstallPrompt: React.FC = () => {
               {[
                 <>
                   Ketuk tombol{" "}
-                  <Icon name="RiShareLine" size={18} color="#007AFF" className="inline -mt-0.5" />{" "}
+                  <Icon
+                    name="RiShareLine"
+                    size={18}
+                    color="#007AFF"
+                    className="inline -mt-0.5"
+                  />{" "}
                   <strong>Share</strong> di Safari
                 </>,
                 <>
@@ -277,7 +344,10 @@ const InstallPrompt: React.FC = () => {
             style={{ animation: "pwa-bounce-in 0.5s ease-out" }}
           >
             {/* Success illustration */}
-            <svg viewBox="0 0 120 120" className="w-28 h-28 mx-auto mb-3 drop-shadow-md">
+            <svg
+              viewBox="0 0 120 120"
+              className="w-28 h-28 mx-auto mb-3 drop-shadow-md"
+            >
               <circle cx="60" cy="60" r="54" fill="#D1FAE5" />
               <circle cx="60" cy="60" r="44" fill="#6EE7B7" />
               <circle cx="60" cy="60" r="34" fill="#14AE5C" />
@@ -294,9 +364,12 @@ const InstallPrompt: React.FC = () => {
               <circle cx="108" cy="98" r="3.5" fill="#34D399" opacity="0.6" />
             </svg>
 
-            <h2 className="text-2xl font-bold text-gray-800">Berhasil Terinstall! 🎉</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Berhasil Terinstall! 🎉
+            </h2>
             <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-              Buka <strong>Afdyl</strong> dari layar utama perangkatmu untuk mulai belajar
+              Buka <strong>Afdyl</strong> dari layar utama perangkatmu untuk
+              mulai belajar
             </p>
 
             <button

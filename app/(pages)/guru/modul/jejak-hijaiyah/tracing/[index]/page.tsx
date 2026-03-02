@@ -7,6 +7,7 @@ import Topbar from "@/components/topbar";
 import TracingCanvas, { TracingCanvasRef } from "@/components/hijaiyah/TracingCanvas";
 import Icon from "@/components/Icon";
 import { hijaiyahLetters, audioMapping } from "@/lib/data/hijaiyah-letters";
+import { playCorrectSFX, playWrongSFX, cleanupSFX } from "@/lib/services/game-sfx";
 
 interface FeedbackState {
   type: "success" | "error" | "warning" | null;
@@ -39,10 +40,12 @@ const TeacherHijaiyahTracingDetailPage = () => {
   const [isCompleted, setIsCompleted] = useState(isAlreadyCompleted);
   const [feedback, setFeedback] = useState<FeedbackState>({ type: null, message: "" });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorResult, setErrorResult] = useState<{ message: string; coverage: number } | null>(null);
 
-  // Lock body scroll when success modal is open
+  // Lock body scroll when any modal is open
   useEffect(() => {
-    if (showSuccessModal) {
+    if (showSuccessModal || showErrorModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -50,7 +53,7 @@ const TeacherHijaiyahTracingDetailPage = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showSuccessModal]);
+  }, [showSuccessModal, showErrorModal]);
 
   // Redirect if no student
   useEffect(() => {
@@ -66,12 +69,13 @@ const TeacherHijaiyahTracingDetailPage = () => {
     setFeedback({ type: null, message: "" });
   }, [isAlreadyCompleted]);
 
-  // Clear feedback timer on unmount
+  // Clear feedback timer and SFX on unmount
   useEffect(() => {
     return () => {
       if (feedbackTimerRef.current) {
         clearTimeout(feedbackTimerRef.current);
       }
+      cleanupSFX();
     };
   }, []);
 
@@ -124,6 +128,7 @@ const TeacherHijaiyahTracingDetailPage = () => {
         setIsCompleted(true);
         showFeedback("success", `Luar Biasa! 🎉 Huruf ${letter} selesai!`);
         handlePlaySound();
+        playCorrectSFX();
         
         // Mark as completed in teacher progress tracking
         if (!isAlreadyCompleted) {
@@ -132,7 +137,9 @@ const TeacherHijaiyahTracingDetailPage = () => {
           setTimeout(() => setShowSuccessModal(true), 500);
         }
       } else {
-        showFeedback("warning", result.message);
+        playWrongSFX();
+        setErrorResult({ message: result.message, coverage: result.coverage });
+        setShowErrorModal(true);
       }
     }
   };
@@ -320,33 +327,58 @@ const TeacherHijaiyahTracingDetailPage = () => {
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/50 z-100 flex items-center justify-center px-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
-            <div className="text-center mb-6">
-              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Icon name="RiTrophyFill" className="w-10 h-10 text-emerald-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Hebat! 🎉</h3>
-              <p className="text-gray-600">
-                <span className="font-semibold text-emerald-600">{currentStudent.name}</span> berhasil menulis huruf
-              </p>
-              <div className="mt-3 text-6xl font-arabic text-emerald-700">
-                {letter}
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                Progress tersimpan otomatis
-              </p>
+        <div className="fixed inset-0 bg-black/30 z-100 flex items-center justify-center px-4" style={{ animation: "jejak-fade-in 0.25s ease-out forwards" }}>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-[320px] w-full text-center shadow-2xl" style={{ animation: "jejak-bounce-in 0.5s ease-out forwards" }}>
+            {/* Star + Checkmark Celebration Illustration */}
+            <svg viewBox="0 0 160 180" className="w-36 h-44 mx-auto drop-shadow-lg">
+              {/* Star burst */}
+              <polygon points="80,8 94,58 148,58 104,88 118,140 80,108 42,140 56,88 12,58 66,58" fill="#D1FAE5" />
+              {/* Inner circles */}
+              <circle cx="80" cy="86" r="38" fill="#6EE7B7" />
+              <circle cx="80" cy="86" r="30" fill="#14AE5C" />
+              {/* Checkmark */}
+              <polyline points="65,88 75,98 96,74" fill="none" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Pencil */}
+              <g transform="translate(128,148) rotate(-15)">
+                <rect x="-4" y="-26" width="8" height="20" rx="1.5" fill="#FBBF24" />
+                <rect x="-5" y="-6" width="10" height="3" rx="1" fill="#78716C" />
+                <polygon points="-3,-3 3,-3 0,6" fill="#F5D0A9" />
+                <rect x="-4" y="-30" width="8" height="4" rx="1.5" fill="#F87171" />
+              </g>
+              {/* Sparkles */}
+              <circle cx="18" cy="35" r="4" fill="#FBBF24" opacity="0.8" />
+              <circle cx="142" cy="28" r="3" fill="#FBBF24" opacity="0.7" />
+              <circle cx="148" cy="105" r="3.5" fill="#34D399" opacity="0.6" />
+              <circle cx="12" cy="112" r="3" fill="#FBBF24" opacity="0.6" />
+              <circle cx="38" cy="165" r="3" fill="#34D399" opacity="0.5" />
+              <circle cx="115" cy="168" r="4" fill="#FBBF24" opacity="0.5" />
+              {/* Confetti */}
+              <rect x="32" y="18" width="6" height="3" rx="1" fill="#EC4899" opacity="0.6" transform="rotate(30 35 19.5)" />
+              <rect x="122" y="12" width="5" height="3" rx="1" fill="#8B5CF6" opacity="0.5" transform="rotate(-20 124.5 13.5)" />
+              <rect x="15" y="145" width="5" height="3" rx="1" fill="#3B82F6" opacity="0.5" transform="rotate(15 17.5 146.5)" />
+            </svg>
+
+            {/* Letter display */}
+            <div className="mt-2 text-6xl font-arabic text-emerald-700 leading-tight">
+              {letter}
             </div>
-            <div className="flex gap-3">
+
+            <h2 className="text-2xl font-bold text-gray-800 mt-2">Hebat! 🎉</h2>
+            <p className="text-gray-500 mt-1 text-sm">
+              <span className="font-semibold text-emerald-600">{currentStudent.name}</span> berhasil menulis huruf <span className="font-semibold text-emerald-600">({pronunciation})</span>
+            </p>
+
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowSuccessModal(false)}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-full font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
               >
+                <Icon name="RiRefreshLine" className="w-4 h-4" />
                 Ulangi
               </button>
               <button
                 onClick={handleNextLetter}
-                className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-emerald-600 text-white rounded-full font-semibold hover:bg-emerald-700 transition-colors shadow-md flex items-center justify-center gap-2"
               >
                 {index < hijaiyahLetters.length - 1 ? (
                   <>
@@ -354,13 +386,131 @@ const TeacherHijaiyahTracingDetailPage = () => {
                     <Icon name="RiArrowRightLine" className="w-5 h-5" />
                   </>
                 ) : (
-                  'Selesai'
+                  <>
+                    <Icon name="RiCheckLine" className="w-5 h-5" />
+                    Selesai
+                  </>
                 )}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Error / Incomplete Tracing Modal */}
+      {showErrorModal && errorResult && (
+        <div className="fixed inset-0 bg-black/30 z-100 flex items-center justify-center px-4" style={{ animation: "jejak-fade-in 0.25s ease-out forwards" }}>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-[320px] w-full text-center shadow-2xl" style={{ animation: "jejak-bounce-in 0.5s ease-out forwards" }}>
+            {/* Pencil + Try Again Illustration */}
+            <svg viewBox="0 0 160 160" className="w-32 h-32 mx-auto drop-shadow-lg">
+              {/* Background circles */}
+              <circle cx="80" cy="80" r="60" fill="#FEF3C7" />
+              <circle cx="80" cy="80" r="48" fill="#FDE68A" />
+              {/* Pencil body */}
+              <g transform="translate(80,82) rotate(-30)">
+                <rect x="-5" y="-36" width="10" height="42" rx="2" fill="#F59E0B" />
+                <polygon points="-5,6 5,6 0,16" fill="#D97706" />
+                <rect x="-5" y="-40" width="10" height="4" rx="2" fill="#F87171" />
+                <rect x="-5" y="-36" width="10" height="5" fill="#FBBF24" opacity="0.5" />
+              </g>
+              {/* Circular arrow (try again) */}
+              <path d="M 118 80 A 38 38 0 1 0 80 42" fill="none" stroke="#F97316" strokeWidth="4" strokeLinecap="round" strokeDasharray="4 3" />
+              <polygon points="80,34 80,50 68,42" fill="#F97316" />
+              {/* Sparkles */}
+              <circle cx="28" cy="32" r="3" fill="#FBBF24" opacity="0.6" />
+              <circle cx="132" cy="28" r="3.5" fill="#F59E0B" opacity="0.5" />
+              <circle cx="138" cy="115" r="3" fill="#FBBF24" opacity="0.5" />
+              <circle cx="22" cy="120" r="3" fill="#F59E0B" opacity="0.6" />
+            </svg>
+
+            {/* Coverage circle */}
+            <div className="relative w-20 h-20 mx-auto mt-2 mb-1">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#FEE2E2" strokeWidth="7" />
+                <circle
+                  cx="40" cy="40" r="34" fill="none" stroke="#F97316" strokeWidth="7" strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 34}`}
+                  strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(errorResult.coverage, 0.99))}`}
+                  className="transition-all duration-500"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-lg font-bold text-orange-500">{Math.round(errorResult.coverage * 100)}%</span>
+              </div>
+            </div>
+
+            <h2 className="text-xl font-bold text-gray-800 mt-1">Belum Selesai</h2>
+            <p className="text-gray-500 mt-1 text-sm">{errorResult.message}</p>
+
+            {/* Tips */}
+            <div className={`rounded-xl p-3 mt-4 flex items-start gap-2 text-left ${
+              errorResult.coverage < 0.3
+                ? "bg-red-50 border border-red-200"
+                : errorResult.coverage < 0.7
+                  ? "bg-orange-50 border border-orange-200"
+                  : "bg-yellow-50 border border-yellow-200"
+            }`}>
+              <Icon
+                name={errorResult.coverage < 0.3 ? "RiLightbulbLine" : "RiInformationLine"}
+                className={`w-5 h-5 shrink-0 mt-0.5 ${
+                  errorResult.coverage < 0.3
+                    ? "text-red-500"
+                    : errorResult.coverage < 0.7
+                      ? "text-orange-500"
+                      : "text-yellow-600"
+                }`}
+              />
+              <p className={`text-xs font-medium ${
+                errorResult.coverage < 0.3
+                  ? "text-red-700"
+                  : errorResult.coverage < 0.7
+                    ? "text-orange-700"
+                    : "text-yellow-700"
+              }`}>
+                {errorResult.coverage < 0.3
+                  ? "Trace semua bagian huruf, termasuk titik-titiknya ya!"
+                  : errorResult.coverage < 0.7
+                    ? "Hampir! Pastikan semua garis huruf ter-trace dengan baik."
+                    : "Sedikit lagi! Periksa bagian kecil yang mungkin terlewat."}
+              </p>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => {
+                  setShowErrorModal(false);
+                  handleReset();
+                }}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-full font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <Icon name="RiRefreshLine" className="w-4 h-4" />
+                Ulangi
+              </button>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="flex-1 py-3 bg-orange-500 text-white rounded-full font-semibold hover:bg-orange-600 transition-colors shadow-md flex items-center justify-center gap-2"
+              >
+                <Icon name="RiPencilLine" className="w-4 h-4" />
+                Lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scoped animations */}
+      <style jsx global>{`
+        @keyframes jejak-bounce-in {
+          0% { opacity: 0; transform: scale(0.3); }
+          50% { opacity: 1; transform: scale(1.05); }
+          70% { transform: scale(0.95); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes jejak-fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 };

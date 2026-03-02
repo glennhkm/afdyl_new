@@ -36,6 +36,12 @@
   --color-error: var(--error);
   --color-neutral-01: var(--neutral-01);
   --font-sans: var(--font-comic-sans);
+
+  /* Quran specific colors */
+  --color-primary-warm: var(--primary-warm);
+  --color-secondary-gold: var(--secondary-gold);
+  --color-tertiary-orange: var(--tertiary-orange);
+  --color-accent-yellow: var(--accent-yellow);
 }
 
 body {

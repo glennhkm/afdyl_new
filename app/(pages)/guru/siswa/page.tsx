@@ -1,21 +1,40 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTeacher } from "@/contexts/TeacherContext";
 import Icon from "@/components/Icon";
 import Topbar from "@/components/topbar";
 import { StudentDashboardSkeleton } from "@/components/ui/Skeleton";
 import { surahNames } from "@/lib/data/surah-names";
 
-const StudentDashboardPage = () => {
+// Game module IDs that should be highlighted on break redirect
+const GAME_MODULE_IDS = new Set(["tebak-hijaiyah", "tangkap-hijaiyah", "jejak-hijaiyah", "lafal-hijaiyah"]);
+
+const StudentDashboardContent = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     currentRoom,
     currentStudent,
     isLoading,
     clearStudent,
   } = useTeacher();
+
+  // Detect ?highlight=games from break reminder redirect
+  const shouldHighlightGames = searchParams.get("highlight") === "games";
+  const [highlightGames, setHighlightGames] = useState(() => shouldHighlightGames);
+
+  // Auto-fade highlight after 8 seconds & clean up URL
+  useEffect(() => {
+    if (!highlightGames) return;
+    // Clean up the URL param without navigation
+    window.history.replaceState(null, "", "/guru/siswa");
+    // scroll to bottom to show the games
+    window.scrollTo({ top: document.body.scrollHeight - 500, behavior: "smooth" });
+    const timer = setTimeout(() => setHighlightGames(false), 10000);
+    return () => clearTimeout(timer);
+  }, [highlightGames]);
 
   // Redirect if no room or student is selected
   useEffect(() => {
@@ -165,14 +184,33 @@ const StudentDashboardPage = () => {
         </div>
       </div>
 
-      {/* Module List - Same as student dashboard */}
-      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-        {modules.map((module) => (
-          <div
-            key={module.id}
-            onClick={() => router.push(module.url)}
-            className="relative h-36 sm:h-44 md:h-48 lg:h-52 bg-background-2 rounded-3xl shadow cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 hover:-translate-y-1 duration-200 border-2 border-brown-brand/50 hover:border-brown-brand group"
-          >
+      {/* Module List */}
+      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 px-4">
+        {modules.map((module) => {
+          const isGameModule = GAME_MODULE_IDS.has(module.id);
+          const isHighlighted = highlightGames && isGameModule;
+
+          return (
+            <div
+              key={module.id}
+              onClick={() => router.push(module.url)}
+              className={`
+                relative h-36 sm:h-44 md:h-48 lg:h-52 rounded-3xl shadow cursor-pointer 
+                flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 
+                hover:-translate-y-1 duration-200 group transition-all
+                ${isHighlighted
+                  ? "bg-amber-50 border-2 border-amber-400 shadow-lg shadow-amber-400/20"
+                  : "bg-background-2 border-2 border-brown-brand/50 hover:border-brown-brand"
+                }
+              `}
+              style={isHighlighted ? { animation: "game-highlight-pulse 1.5s ease-in-out infinite" } : undefined}
+            >
+              {/* Recommended badge for highlighted games */}
+              {isHighlighted && (
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md whitespace-nowrap flex items-center gap-1 z-10">
+                  <span>🎮</span> Rekomendasi
+                </div>
+              )}
             {/* Progress Badge */}
             {module.progress && (
               <div className="absolute top-2 right-2 text-[10px] sm:text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -205,9 +243,44 @@ const StudentDashboardPage = () => {
               </button>
             )} */}
           </div>
-        ))}
+          );
+        })}
       </div>
+
+      {/* Break banner when games are highlighted */}
+      {highlightGames && (
+        <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center gap-3">
+          <span className="text-2xl">🎮</span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-800">
+              Waktunya istirahat!
+            </p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              Coba mainkan salah satu permainan yang direkomendasikan di atas untuk selingan belajar.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Highlight animation */}
+      {highlightGames && (
+        <style jsx global>{`
+          @keyframes game-highlight-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3), 0 4px 15px rgba(245, 158, 11, 0.15); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.1), 0 4px 20px rgba(245, 158, 11, 0.25); }
+          }
+        `}</style>
+      )}
     </div>
+  );
+};
+
+// Suspense wrapper for useSearchParams
+const StudentDashboardPage = () => {
+  return (
+    <Suspense fallback={<StudentDashboardSkeleton />}>
+      <StudentDashboardContent />
+    </Suspense>
   );
 };
 
