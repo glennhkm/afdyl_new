@@ -31,6 +31,7 @@ import {
   cleanupSFX,
 } from "@/lib/services/game-sfx";
 import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
+import Image from "next/image";
 
 // ============================================
 // PLATFORM DETECTION
@@ -52,6 +53,12 @@ function detectDevicePlatform(): DevicePlatform {
 }
 
 // ============================================
+// AUDIO: silent data-URI for iOS unlock (minimal valid WAV)
+// ============================================
+const SILENT_AUDIO_SRC =
+  "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+
+// ============================================
 // GAME CONFIGURATION
 // ============================================
 // Fall speeds are in **pixels per second** (frame-rate independent via delta-time).
@@ -60,9 +67,9 @@ const PLATFORM_SPEED: Record<
   DevicePlatform,
   { base: number; increment: number }
 > = {
-  desktop: { base: 100, increment: 25 },
-  ios:     { base: 70, increment: 25 },
-  android: { base: 160, increment: 25 },
+  desktop: { base: 120, increment: 25 },
+  ios: { base: 100, increment: 25 },
+  android: { base: 170, increment: 25 },
 };
 
 const PLATFORM_COLLISION_SCALE: Record<DevicePlatform, number> = {
@@ -325,6 +332,9 @@ const TangkapHijaiyahGame = () => {
   const lastSpawnTimeRef = useRef<number>(0);
   const roundEndTimeRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUnlockedRef = useRef(false);
+  const audioCacheRef = useRef<Map<string, string>>(new Map());
+  const preloadStartedRef = useRef(false);
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
   // Platform & frame timing
@@ -527,20 +537,132 @@ const TangkapHijaiyahGame = () => {
   }, []);
 
   // ============================================
-  // AUDIO
+  // AUDIO — iOS-safe persistent element approach
   // ============================================
-  const playAudio = useCallback((audioFile: string) => {
-    try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      audioRef.current = new Audio(`/audio/${audioFile}`);
-      audioRef.current.volume = 0.8;
-      audioRef.current.play().catch(() => {});
-    } catch (e) {
-      console.error("Audio error:", e);
+
+  // Create ONE persistent <audio> element on mount.
+  // iOS requires the SAME element to be .play()'d in a user-gesture first;
+  // all later programmatic .play() calls on that element are then allowed.
+  useEffect(() => {
+    if (!audioRef.current) {
+      const el = document.createElement("audio");
+      el.setAttribute("playsinline", "");
+      el.setAttribute("webkit-playsinline", "");
+      el.preload = "auto";
+      el.volume = 0.8;
+      audioRef.current = el;
     }
+    const cache = audioCacheRef.current;
+    return () => {
+      // Revoke cached blob URLs on unmount
+      cache.forEach((url) => URL.revokeObjectURL(url));
+      cache.clear();
+    };
+  }, []);
+
+  // Pre-load all hijaiyah audio files as blob URLs.
+  // Eliminates network latency on every play and works offline (PWA).
+  const preloadAllAudio = useCallback(() => {
+    if (preloadStartedRef.current) return;
+    preloadStartedRef.current = true;
+    const cache = audioCacheRef.current;
+    hijaiyahGameLetters.forEach(({ audio }) => {
+      if (cache.has(audio)) return;
+      fetch(`/audio/${audio}`)
+        .then((res) => res.blob())
+        .then((blob) => {
+          cache.set(audio, URL.createObjectURL(blob));
+        })
+        .catch(() => {}); // silent — direct URL is the fallback
+    });
+  }, []);
+
+  // Unlock audio element on iOS.
+  // MUST be called synchronously inside a click/tap handler
+  // (before any await) so iOS considers it a user gesture.
+  const unlockAudio = useCallback(() => {
+    if (audioUnlockedRef.current) return;
+    const el = audioRef.current;
+    if (!el) return;
+    el.src = SILENT_AUDIO_SRC;
+    el.volume = 0.01;
+    const p = el.play();
+    if (p) {
+      p.then(() => {
+        el.volume = 0.8;
+        audioUnlockedRef.current = true;
+      }).catch(() => {
+        // Even if this fails, mark as attempted so we don't retry every click
+        el.volume = 0.8;
+      });
+    }
+  }, []);
+
+  // Play audio using the persistent element + cached blob URL.
+  // Returns a Promise that resolves when the audio finishes playing
+  // (or after a safety timeout), so callers can await it.
+  const playAudio = useCallback((audioFile: string): Promise<void> => {
+    const el = audioRef.current;
+    if (!el) return Promise.resolve();
+
+    // Capture non-null reference for use inside closures
+    const audioEl = el;
+
+    return new Promise<void>((resolve) => {
+      try {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+
+        // Safety timeout — resolve even if 'ended' never fires (e.g. broken file)
+        const safetyTimer = setTimeout(() => {
+          cleanup();
+          resolve();
+        }, 3000);
+
+        function cleanup() {
+          clearTimeout(safetyTimer);
+          audioEl.removeEventListener("ended", onEnded);
+          audioEl.removeEventListener("error", onError);
+        }
+
+        function onEnded() {
+          cleanup();
+          resolve();
+        }
+
+        function onError() {
+          cleanup();
+          resolve(); // don't block the game on audio failure
+        }
+
+        audioEl.addEventListener("ended", onEnded, { once: true });
+        audioEl.addEventListener("error", onError, { once: true });
+
+        // Use pre-loaded blob URL if available, otherwise direct path
+        const cachedUrl = audioCacheRef.current.get(audioFile);
+        audioEl.src = cachedUrl || `/audio/${audioFile}`;
+        audioEl.load();
+
+        const playPromise = audioEl.play();
+        if (playPromise) {
+          playPromise.catch((err) => {
+            console.warn(`Audio play failed for ${audioFile}:`, err.message);
+            // Retry once after a short delay (covers iOS race conditions)
+            setTimeout(() => {
+              audioEl.currentTime = 0;
+              audioEl.play().catch(() => {
+                // If retry also fails, resolve immediately so game isn't blocked
+                cleanup();
+                resolve();
+              });
+            }, 120);
+          });
+        }
+      } catch (e) {
+        console.error("Audio error:", e);
+        resolve();
+      }
+    });
   }, []);
 
   // ============================================
@@ -644,17 +766,26 @@ const TangkapHijaiyahGame = () => {
       targetName: targetData.name,
       targetAudio: targetData.audio,
       cards,
-      isActive: true,
+      isActive: false, // cards don't fall yet — audio plays first
     };
 
     lifeDeductedForRoundRef.current = false;
     currentRoundRef.current = newRound;
-    setCurrentRound(newRound);
-    playAudio(targetData.audio);
+    setCurrentRound(newRound); // shows target letter pill immediately
 
-    setTimeout(() => {
-      isSpawningRef.current = false;
-    }, 100);
+    // Play the target letter audio, THEN activate cards
+    playAudio(targetData.audio).then(() => {
+      // Guard: only activate if this is still the current round
+      if (currentRoundIdRef.current !== roundId) return;
+
+      const activated = { ...newRound, isActive: true };
+      currentRoundRef.current = activated;
+      setCurrentRound(activated);
+
+      setTimeout(() => {
+        isSpawningRef.current = false;
+      }, 100);
+    });
   }, [getDistractorLetters, playAudio]);
 
   // Add catch effect
@@ -685,7 +816,7 @@ const TangkapHijaiyahGame = () => {
   // Detect hand position — runs on its own interval, never inside rAF.
   // Uses re-entry guard so overlapping ML calls are impossible.
   const detectPosition = useCallback(async () => {
-    if (isDetectingRef.current) return;          // skip if previous call still running
+    if (isDetectingRef.current) return; // skip if previous call still running
     if (!videoRef.current || !canvasRef.current || !isHandTrackingReady) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -715,7 +846,11 @@ const TangkapHijaiyahGame = () => {
         const overlayCtx = overlayCanvasRef.current.getContext("2d");
         if (overlayCtx) {
           // Set canvas buffer size only once (avoids expensive GPU re-alloc every frame)
-          if (!overlayDimsSetRef.current || overlayCanvasRef.current.width !== gw || overlayCanvasRef.current.height !== gh) {
+          if (
+            !overlayDimsSetRef.current ||
+            overlayCanvasRef.current.width !== gw ||
+            overlayCanvasRef.current.height !== gh
+          ) {
             overlayCanvasRef.current.width = gw;
             overlayCanvasRef.current.height = gh;
             overlayDimsSetRef.current = true;
@@ -1084,6 +1219,12 @@ const TangkapHijaiyahGame = () => {
   // GAME ACTIONS
   // ============================================
   const startGame = useCallback(async () => {
+    // CRITICAL: Unlock audio on iOS BEFORE any async work.
+    // This runs synchronously inside the user's tap handler,
+    // so iOS considers it a user-gesture-activated .play().
+    unlockAudio();
+    preloadAllAudio();
+
     // Only init camera if not already running
     if (!streamRef.current) {
       const cameraReady = await initCamera();
@@ -1128,7 +1269,7 @@ const TangkapHijaiyahGame = () => {
     }, 1000);
 
     return () => clearInterval(countdownInterval);
-  }, [initCamera, gameLoop]);
+  }, [initCamera, gameLoop, unlockAudio, preloadAllAudio]);
 
   const togglePause = useCallback(() => {
     setGameState((prev) => ({
@@ -1209,7 +1350,8 @@ const TangkapHijaiyahGame = () => {
   // Hand detection runs on its own interval — completely decoupled from rAF.
   // This prevents async ML inference from blocking/stuttering the game loop.
   useEffect(() => {
-    const shouldDetect = gameState.status === "playing" || gameState.status === "countdown";
+    const shouldDetect =
+      gameState.status === "playing" || gameState.status === "countdown";
     if (shouldDetect) {
       overlayDimsSetRef.current = false; // reset on status change
       // Run detection as fast as the model allows (re-entry guard prevents overlap)
@@ -1229,11 +1371,16 @@ const TangkapHijaiyahGame = () => {
   useEffect(() => {
     return () => {
       cancelAnimationFrame(animationFrameRef.current);
-      if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
+      if (detectionIntervalRef.current)
+        clearInterval(detectionIntervalRef.current);
       stopCamera();
       cleanupHandTracking();
       cleanupSFX();
-      if (audioRef.current) audioRef.current.pause();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute("src");
+        audioRef.current.load(); // release resources
+      }
     };
   }, [stopCamera]);
 
@@ -1334,7 +1481,13 @@ const TangkapHijaiyahGame = () => {
 
             {/* Moon icon + Level badge */}
             <div className="flex items-center gap-1 shrink-0">
-              <span className="text-xl">🌙</span>
+              {/* <span className="text-xl">🌙</span> */}
+              <Image
+                src={'/icons/analyticalIndicator.png'}
+                alt="Level Icon"
+                width={30}
+                height={30}
+              />
               <div className="flex flex-col items-end leading-none">
                 <span className="text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white/70">
                   Level {gameState.level}
@@ -1414,9 +1567,7 @@ const TangkapHijaiyahGame = () => {
                         : "bg-amber-400 animate-pulse"
                     }`}
                     title={
-                      isHandDetected
-                        ? "Tangan terdeteksi"
-                        : "Tunjukkan tangan"
+                      isHandDetected ? "Tangan terdeteksi" : "Tunjukkan tangan"
                     }
                   />
                 </div>
@@ -1431,21 +1582,21 @@ const TangkapHijaiyahGame = () => {
               <div className="flex-1" />
 
               {/* Target letter pill */}
-              {currentRound?.isActive && (
-                <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-md border border-gray-100">
-                  <span className="text-gray-600 font-semibold text-sm">
+              {currentRound && (
+                <div className="flex items-center gap-2.5 bg-white rounded-full px-5 py-2.5 shadow-lg border border-gray-200">
+                  <span className="text-gray-600 font-bold text-base">
                     Tangkap
                   </span>
-                  <span className="text-2xl font-arabic font-bold text-[#4A5568] leading-none -mt-1">
+                  <span className="text-4xl font-arabic font-bold text-[#E37100] leading-none -mt-1">
                     {currentRound.targetLetter}
                   </span>
                   <button
                     onClick={() => playAudio(currentRound.targetAudio)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-[#EDD1B0]/30 hover:bg-[#EDD1B0]/50 transition"
                   >
                     <Icon
                       name="RiVolumeUpFill"
-                      className="w-4 h-4 text-gray-500"
+                      className="w-5 h-5 text-[#E37100]"
                     />
                   </button>
                 </div>
