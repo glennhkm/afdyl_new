@@ -61,6 +61,7 @@ const TebakHijaiyahPage = () => {
   // Drag tracking — all via refs to avoid re-renders during drag
   const dragCardIndexRef = useRef<number | null>(null);
   const dragElementRef = useRef<HTMLDivElement | null>(null);
+  const dragOriginalCardRef = useRef<HTMLDivElement | null>(null);
   const startPosRef = useRef({ x: 0, y: 0 });
   const currentPosRef = useRef({ x: 0, y: 0 });
   // true once direction confirmed as vertical (not horizontal scroll)
@@ -193,16 +194,25 @@ const TebakHijaiyahPage = () => {
     if (cardEl) {
       const rect = cardEl.getBoundingClientRect();
       startFixedPosRef.current = { left: rect.left, top: rect.top };
-      dragElementRef.current = cardEl;
-      cardEl.style.transition = "none";
-      cardEl.style.position = "fixed";
-      cardEl.style.left = `${rect.left}px`;
-      cardEl.style.top = `${rect.top}px`;
-      cardEl.style.width = `${rect.width}px`;
-      cardEl.style.height = `${rect.height}px`;
-      cardEl.style.margin = "0";
-      cardEl.style.zIndex = "9999";
-      cardEl.style.transform = "scale(1.12)";
+
+      // Ghost clone appended to body — escapes all stacking contexts (fixes mobile Safari)
+      const ghost = cardEl.cloneNode(true) as HTMLDivElement;
+      ghost.style.position = "fixed";
+      ghost.style.left = `${rect.left}px`;
+      ghost.style.top = `${rect.top}px`;
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.height = `${rect.height}px`;
+      ghost.style.margin = "0";
+      ghost.style.zIndex = "99999";
+      ghost.style.transform = "scale(1.12)";
+      ghost.style.transition = "none";
+      ghost.style.pointerEvents = "none";
+      ghost.style.boxSizing = "border-box";
+      document.body.appendChild(ghost);
+
+      dragElementRef.current = ghost;
+      dragOriginalCardRef.current = cardEl;
+      cardEl.style.opacity = "0.3";
     }
     setIsDragging(true);
   }, []);
@@ -234,21 +244,29 @@ const TebakHijaiyahPage = () => {
           dragCardIndexRef.current = null;
           return;
         }
-        // Vertical → activate drag with fixed positioning (escapes overflow:hidden)
+        // Vertical → create ghost clone appended to body (escapes all stacking contexts)
         const cardEl = cardRefs.current.get(dragCardIndexRef.current!);
         if (cardEl) {
           const rect = cardEl.getBoundingClientRect();
           startFixedPosRef.current = { left: rect.left, top: rect.top };
-          dragElementRef.current = cardEl;
-          cardEl.style.transition = "none";
-          cardEl.style.position = "fixed";
-          cardEl.style.left = `${rect.left}px`;
-          cardEl.style.top = `${rect.top}px`;
-          cardEl.style.width = `${rect.width}px`;
-          cardEl.style.height = `${rect.height}px`;
-          cardEl.style.margin = "0";
-          cardEl.style.zIndex = "9999";
-          cardEl.style.transform = "scale(1.12)";
+
+          const ghost = cardEl.cloneNode(true) as HTMLDivElement;
+          ghost.style.position = "fixed";
+          ghost.style.left = `${rect.left}px`;
+          ghost.style.top = `${rect.top}px`;
+          ghost.style.width = `${rect.width}px`;
+          ghost.style.height = `${rect.height}px`;
+          ghost.style.margin = "0";
+          ghost.style.zIndex = "99999";
+          ghost.style.transform = "scale(1.12)";
+          ghost.style.transition = "none";
+          ghost.style.pointerEvents = "none";
+          ghost.style.boxSizing = "border-box";
+          document.body.appendChild(ghost);
+
+          dragElementRef.current = ghost;
+          dragOriginalCardRef.current = cardEl;
+          cardEl.style.opacity = "0.3";
         }
         isDragActiveRef.current = true;
         setIsDragging(true);
@@ -275,24 +293,25 @@ const TebakHijaiyahPage = () => {
       const wasInDropZone = isDragActiveRef.current && checkDropZoneRef.current(finalY);
 
       if (dragElementRef.current) {
-        const el = dragElementRef.current;
-        el.style.transition = "left 0.2s ease-out, top 0.2s ease-out, transform 0.2s ease-out";
-        el.style.left = `${startFixedPosRef.current.left}px`;
-        el.style.top = `${startFixedPosRef.current.top}px`;
-        el.style.transform = "scale(1)";
-        el.style.zIndex = "";
-        el.style.boxShadow = "";
+        const ghost = dragElementRef.current;
+        // Animate ghost back to original position
+        ghost.style.transition = "left 0.2s ease-out, top 0.2s ease-out, transform 0.2s ease-out";
+        ghost.style.left = `${startFixedPosRef.current.left}px`;
+        ghost.style.top = `${startFixedPosRef.current.top}px`;
+        ghost.style.transform = "scale(1)";
+        ghost.style.boxShadow = "";
         setTimeout(() => {
-          if (el) {
-            el.style.position = "";
-            el.style.left = "";
-            el.style.top = "";
-            el.style.width = "";
-            el.style.height = "";
-            el.style.margin = "";
-            el.style.transition = "";
+          // Remove ghost from body
+          if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+          // Restore original card
+          if (dragOriginalCardRef.current) {
+            dragOriginalCardRef.current.style.opacity = "";
+            dragOriginalCardRef.current = null;
           }
         }, 200);
+      } else if (dragOriginalCardRef.current) {
+        dragOriginalCardRef.current.style.opacity = "";
+        dragOriginalCardRef.current = null;
       }
 
       if (wasInDropZone) validateAnswerRef.current(cardIndex);
@@ -316,6 +335,13 @@ const TebakHijaiyahPage = () => {
       window.removeEventListener("touchmove", handleMove);
       window.removeEventListener("touchend", handleEnd);
       window.removeEventListener("touchcancel", handleEnd);
+      // Clean up any lingering ghost element on unmount
+      if (dragElementRef.current && dragElementRef.current.parentNode) {
+        dragElementRef.current.parentNode.removeChild(dragElementRef.current);
+      }
+      if (dragOriginalCardRef.current) {
+        dragOriginalCardRef.current.style.opacity = "";
+      }
     };
   // Registered once — all mutable state accessed through refs
   }, []);
