@@ -38,9 +38,9 @@ import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 const GAME_CONFIG = {
   LANES: 3,
   INITIAL_FALL_SPEED: 4.5,
-  INITIAL_FALL_SPEED_MOBILE: 7.0,
-  SPEED_INCREMENT: 1,
-  SPEED_INCREMENT_MOBILE: 1,
+  INITIAL_FALL_SPEED_MOBILE: 6,
+  SPEED_INCREMENT: 1.2,
+  SPEED_INCREMENT_MOBILE: 0.8,
   CARD_WIDTH: 136,
   CARD_HEIGHT: 136,
   COLLISION_SCALE_DESKTOP: 1.0,
@@ -485,33 +485,15 @@ const TangkapHijaiyahGame = () => {
   // ============================================
   // AUDIO
   // ============================================
-  // Warm up / unlock audio on mobile — must be called inside a user gesture (e.g. startGame button click)
-  const warmUpAudio = useCallback(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.volume = 0.8;
-    }
-    // Play a tiny silent WAV to "unlock" the element on iOS/Android
-    audioRef.current.src =
-      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-    audioRef.current.play().then(() => {
-      audioRef.current!.pause();
-      audioRef.current!.currentTime = 0;
-    }).catch(() => {});
-  }, []);
-
   const playAudio = useCallback((audioFile: string) => {
     try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio();
-        audioRef.current.volume = 0.8;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       }
-      const audio = audioRef.current;
-      audio.pause();
-      audio.currentTime = 0;
-      audio.src = `/audio/${audioFile}`;
-      audio.load();
-      audio.play().catch(() => {});
+      audioRef.current = new Audio(`/audio/${audioFile}`);
+      audioRef.current.volume = 0.8;
+      audioRef.current.play().catch(() => {});
     } catch (e) {
       console.error("Audio error:", e);
     }
@@ -1023,9 +1005,6 @@ const TangkapHijaiyahGame = () => {
   // GAME ACTIONS
   // ============================================
   const startGame = useCallback(async () => {
-    // Unlock audio playback on mobile (must happen in user gesture)
-    warmUpAudio();
-
     // Only init camera if not already running
     if (!streamRef.current) {
       const cameraReady = await initCamera();
@@ -1069,7 +1048,7 @@ const TangkapHijaiyahGame = () => {
     }, 1000);
 
     return () => clearInterval(countdownInterval);
-  }, [initCamera, gameLoop, warmUpAudio]);
+  }, [initCamera, gameLoop]);
 
   const togglePause = useCallback(() => {
     setGameState((prev) => ({
