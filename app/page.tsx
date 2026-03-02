@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useTeacher } from "@/contexts/TeacherContext";
 import Icon from "@/components/Icon";
 
 const Home = () => {

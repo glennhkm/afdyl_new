@@ -188,6 +188,9 @@ const ReadingContent = () => {
   const [wordSpacing, setWordSpacing] = useState(40);
   const [currentActiveAyah, setCurrentActiveAyah] = useState(0);
   const [currentActiveWord, setCurrentActiveWord] = useState(0);
+  // Tracks which ayah is actually PLAYING audio (separate from the visually selected ayah)
+  // so that navigating to another ayah doesn't steal the running word highlight.
+  const [playingAyahIndex, setPlayingAyahIndex] = useState(-1);
   const [autoHighlight, setAutoHighlight] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showMarkConfirm, setShowMarkConfirm] = useState(false);
@@ -213,6 +216,10 @@ const ReadingContent = () => {
   const isContinuousRef = useRef<boolean>(false);
   // Ref to latest playAyahAudio to avoid stale closure in audio ended handler
   const playAyahAudioRef = useRef<((ayahIndex: number, continuous?: boolean) => void) | null>(null);
+  // Karaoke fill animation refs (RAF-based, no React re-renders at 60fps)
+  const animFrameRef = useRef<number | null>(null);
+  const activeSegmentRef = useRef<{ start: number; end: number } | null>(null);
+  const activeWordElRef = useRef<HTMLElement | null>(null);
 
   // Computed values
   const ayahNumberSize = useMemo(
@@ -232,7 +239,7 @@ const ReadingContent = () => {
     try {
       const [ayahData, timingData] = await Promise.all([
         fetchAyahs(type, number),
-        fetchTimings(),
+        fetchTimings(number),
       ]);
 
       setAyahs(ayahData);
@@ -251,6 +258,10 @@ const ReadingContent = () => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
+      }
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
       }
     };
   }, [loadAyahs]);
@@ -295,14 +306,35 @@ const ReadingContent = () => {
     }
   }, []);
 
+  // RAF-based karaoke fill: smoothly fills active word from right to left as audio plays
+  const startWordFillAnimation = useCallback(() => {
+    // Highlight is driven purely by React state (currentActiveWord + autoHighlight)
+    // — no RAF gradient needed. Cancel any stale frame from a previous session.
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+  }, []);
+
+  const stopWordFillAnimation = useCallback(() => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    activeSegmentRef.current = null;
+    activeWordElRef.current = null;
+  }, []);
+
   // Stop auto highlight - defined before playAyahAudio to avoid dependency issues
   const stopAutoHighlight = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
+    stopWordFillAnimation();
     isContinuousRef.current = false;
+    setPlayingAyahIndex(-1);
     setAutoHighlight(false);
-  }, []);
+  }, [stopWordFillAnimation]);
 
   // Play ayah audio
   // continuous=true  → triggered from floating "Putar" button, plays until the last ayah
@@ -330,6 +362,7 @@ const ReadingContent = () => {
       isContinuousRef.current = continuous;
 
       setCurrentActiveAyah(ayahIndex);
+      setPlayingAyahIndex(ayahIndex);
       setCurrentActiveWord(0);
       setAutoHighlight(true);
 
@@ -343,32 +376,40 @@ const ReadingContent = () => {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
-      // Word-by-word highlight via timing segments
+      // Word-by-word highlight with proportional fallback
       audio.addEventListener("timeupdate", () => {
-        const ms = audio.currentTime * 1000;
         const segments = getAyahTimings(timings, number, ayah.number);
         const words = ayah.words || [];
+        if (words.length === 0) return;
 
-        if (segments.length > 0 && words.length > 0) {
+        let newWordIndex = -1;
+
+        // Primary: accurate per-word timing from qurancdn segments
+        if (segments.length > 0) {
+          const ms = audio.currentTime * 1000;
           for (const segment of segments) {
-            if (segment.length >= 4) {
-              const startMs = segment[2];
-              const endMs = segment[3];
-              const idx1Based = segment[0];
-              const wordIndex = idx1Based - 1;
-
-              if (
-                ms >= startMs &&
-                ms < endMs &&
-                wordIndex >= 0 &&
-                wordIndex < words.length
-              ) {
-                setCurrentActiveWord(wordIndex);
+            if (segment.length >= 3) {
+              const startMs = segment[1];
+              const endMs = segment[2];
+              const wordIndex = segment[0] - 1; // 1-based → 0-based
+              if (ms >= startMs && ms < endMs && wordIndex >= 0 && wordIndex < words.length) {
+                newWordIndex = wordIndex;
                 break;
               }
             }
           }
         }
+
+        // Fallback: proportional distribution when no segment data
+        if (newWordIndex === -1 && !isNaN(audio.duration) && audio.duration > 0) {
+          newWordIndex = Math.min(
+            words.length - 1,
+            Math.floor((audio.currentTime / audio.duration) * words.length)
+          );
+        }
+
+        if (newWordIndex === -1) return;
+        setCurrentActiveWord(newWordIndex);
       });
 
       audio.addEventListener("ended", () => {
@@ -389,8 +430,10 @@ const ReadingContent = () => {
         console.error("Audio play failed:", err);
         setErrorMessage("Gagal memutar audio");
       });
+      // Start RAF karaoke fill animation loop
+      startWordFillAnimation();
     },
-    [ayahs, currentActiveAyah, autoHighlight, scrollToAyah, timings, number, stopAutoHighlight]
+    [ayahs, currentActiveAyah, autoHighlight, scrollToAyah, timings, number, stopAutoHighlight, startWordFillAnimation]
   );
 
   // Keep playAyahAudioRef pointing to the latest version so the ended-handler
@@ -403,7 +446,8 @@ const ReadingContent = () => {
   const handleAyahClick = useCallback(
     (ayahIndex: number) => {
       setCurrentActiveAyah(ayahIndex);
-      setCurrentActiveWord(0);
+      // Do NOT reset currentActiveWord here — if audio is playing another ayah,
+      // we want the word highlight to keep running on the playing ayah undisturbed.
       scrollToAyah(ayahIndex);
     },
     [scrollToAyah]
@@ -429,42 +473,37 @@ const ReadingContent = () => {
       wordIndex: number,
       isActiveAyah: boolean
     ) => {
-      const isActiveWord = isActiveAyah && wordIndex === currentActiveWord;
-      const isReadWord =
-        ayahIndex < currentActiveAyah ||
-        (isActiveAyah && wordIndex < currentActiveWord);
+      // isPlayingAyah = the ayah whose audio is actually running right now
+      const isPlayingAyah = autoHighlight && ayahIndex === playingAyahIndex;
+      const isActiveWord = isPlayingAyah && wordIndex === currentActiveWord;
 
-      let bgColor = "bg-gray-100/5";
-      let textColor = "text-black/5";
-
-      if (isActiveWord) {
-        bgColor = "bg-yellow-200";
-        textColor = "text-black";
-      } else if (isReadWord) {
-        bgColor = "bg-green-50";
-        textColor = "text-black/60";
+      // Pure opacity — text is always black, only opacity varies:
+      // • Not selected AND not playing   → text-black/20  (dim background ayahs)
+      // • Playing ayah (audio on)         → active word = black, rest = text-black/25
+      // • Selected ayah (not playing)     → text-black     (fully visible, no word dim)
+      let textOpacity: string;
+      if (isPlayingAyah) {
+        textOpacity = isActiveWord ? 'text-black' : 'text-black/25';
       } else if (isActiveAyah) {
-        bgColor = "bg-white";
-        textColor = "text-black";
+        textOpacity = 'text-black';
+      } else {
+        textOpacity = 'text-black/20';
       }
 
       return (
         <button
           key={wordIndex}
           onClick={() => handleWordClick(ayahIndex, wordIndex)}
-          className={`inline-block rounded-lg transition-all duration-200 ${bgColor} ${
-            isActiveWord ? "ring-2 ring-[#D4A574] shadow-md" : ""
-          }`}
-          style={{
-            padding: `${wordPadding * 0.7}px ${wordPadding}px`,
-            marginLeft: `${wordSpacing * 0.3}px`,
-          }}
+          className="inline-block"
+          style={{ marginLeft: `${wordSpacing * 0.3}px` }}
         >
           <span
-            className={`font-arabic ${textColor}`}
+            data-ayah-word={`${ayahIndex}-${wordIndex}`}
+            className={`font-arabic ${textOpacity} transition-opacity duration-200`}
             style={{
               fontSize: `${fontSize}px`,
               lineHeight: 1.4,
+              padding: `0 ${wordPadding * 0.25}px`,
             }}
           >
             {word.text}
@@ -474,7 +513,8 @@ const ReadingContent = () => {
     },
     [
       currentActiveWord,
-      currentActiveAyah,
+      playingAyahIndex,
+      autoHighlight,
       handleWordClick,
       wordPadding,
       wordSpacing,

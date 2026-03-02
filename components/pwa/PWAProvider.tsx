@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useSyncExternalStore, useMemo } from "react";
+import React, { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import InstallPrompt from "./InstallPrompt";
 import PullToRefresh from "./PullToRefresh";
 import ScrollToTopProvider from "@/components/ScrollToTopProvider";
@@ -10,7 +10,7 @@ interface PWAProviderProps {
   children: React.ReactNode;
 }
 
-// Client-side state store for hydration-safe detection
+// ── Client-side hydration-safe store ─────────────────────────────────────────
 const clientStore = {
   isClient: false,
   listeners: new Set<() => void>(),
@@ -26,47 +26,56 @@ const clientStore = {
   },
 };
 
-// Initialize client state after hydration
 if (typeof window !== "undefined") {
   clientStore.isClient = true;
 }
 
-const useIsClient = () => {
-  return useSyncExternalStore(
+const useIsClient = () =>
+  useSyncExternalStore(
     clientStore.subscribe.bind(clientStore),
     clientStore.getSnapshot.bind(clientStore),
-    clientStore.getServerSnapshot.bind(clientStore)
+    clientStore.getServerSnapshot.bind(clientStore),
+  );
+
+// ── Standalone detection ─────────────────────────────────────────────────────
+// Returns true ONLY when running as an installed PWA (not in a browser tab).
+const checkStandaloneMode = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+      true ||
+    document.referrer.includes("android-app://")
   );
 };
 
-// Check installation state (derived, not useState in effect)
-const getInstallationState = () => {
-  if (typeof window === "undefined") {
-    return { isStandalone: false, isInstalled: false };
-  }
-
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as Navigator & { standalone?: boolean }).standalone ||
-    document.referrer.includes("android-app://");
-
-  const isInstalled =
-    localStorage.getItem("afdyl-pwa-installed") === "true" || isStandalone;
-
-  return { isStandalone, isInstalled };
-};
-
+// ── Component ────────────────────────────────────────────────────────────────
 const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
   const isClient = useIsClient();
 
-  // Compute installation state from client (no setState in effect)
-  const { isStandalone, isInstalled } = useMemo(() => {
-    if (!isClient) return { isStandalone: false, isInstalled: false };
-    return getInstallationState();
+  // Compute standalone mode synchronously — no effect needed
+  const initialStandalone = useMemo(() => {
+    if (!isClient) return false;
+    if (process.env.NODE_ENV === "development") return true;
+    return checkStandaloneMode();
   }, [isClient]);
 
-  const showInstallPrompt = !isStandalone && !isInstalled;
+  // Track runtime display-mode changes (user installs while page is open)
+  const [runtimeStandalone, setRuntimeStandalone] = useState(false);
 
+  useEffect(() => {
+    if (!isClient || initialStandalone) return;
+    const mq = window.matchMedia("(display-mode: standalone)");
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setRuntimeStandalone(true);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [isClient, initialStandalone]);
+
+  const isStandalone = initialStandalone || runtimeStandalone;
+
+  // ── SSR / pre-hydration skeleton ────────────────────────────────────────
   if (!isClient) {
     return (
       <div className="fixed inset-0 bg-[#FDF6E3] z-9999 flex items-center justify-center">
@@ -84,22 +93,18 @@ const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
     );
   }
 
-  // Wrap content with ScrollToTopProvider and PullToRefresh
-  const content = (
+  // ── Browser mode → show install landing page (gates ALL features) ───────
+  if (!isStandalone) {
+    return <InstallPrompt />;
+  }
+
+  // ── Standalone (installed PWA) → full app ───────────────────────────────
+  return (
     <PullToRefreshProvider>
       <ScrollToTopProvider>
-        <PullToRefresh>
-          {children}
-        </PullToRefresh>
+        <PullToRefresh>{children}</PullToRefresh>
       </ScrollToTopProvider>
     </PullToRefreshProvider>
-  );
-
-  return (
-    <>
-      {showInstallPrompt && <InstallPrompt />}
-      {!showInstallPrompt && content}
-    </>
   );
 };
 

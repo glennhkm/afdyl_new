@@ -139,8 +139,17 @@ export const fetchAyahs = async (type: 'surah' | 'juz', number: number): Promise
               translation: word.translation || translationAyah.text || '',
             });
           }
-        } else if (i === 0 && number !== 1 && number !== 9 && type === 'surah') {
-          processedText = removeFirst4Words(processedText);
+        } else {
+          // alquran.cloud (ar.alafasy) does not return per-word data.
+          // Split the Arabic text into individual words so the karaoke
+          // highlighter can target each word via data-ayah-word attributes.
+          if (i === 0 && number !== 1 && number !== 9 && type === 'surah') {
+            processedText = removeFirst4Words(processedText);
+          }
+          const textWords = processedText.split(/\s+/).filter(Boolean);
+          for (const wordText of textWords) {
+            words.push({ text: wordText, translation: '' });
+          }
         }
 
         combinedAyahs.push({
@@ -163,10 +172,10 @@ export const fetchAyahs = async (type: 'surah' | 'juz', number: number): Promise
   }
 };
 
-// Fetch word timings for audio sync (using local API route to avoid CORS)
-export const fetchTimings = async (): Promise<AyahTiming[]> => {
+// Fetch word timings for a specific surah (using local API route to avoid CORS)
+export const fetchTimings = async (surahNumber: number): Promise<AyahTiming[]> => {
   try {
-    const response = await fetch('/api/quran/timings');
+    const response = await fetch(`/api/quran/timings?surah=${surahNumber}`);
 
     if (response.ok) {
       const data = await response.json();

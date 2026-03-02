@@ -74,7 +74,7 @@ const ClientPage = () => {
           <Link
             key={index}
             href={item.url}
-            className="relative h-36 sm:h-44 md:h-48 lg:h-52 bg-background-2 rounded-3xl shadow cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 hover:-translate-y-1 duration-200 border-2 border-brown-brand/50 hover:border-brown-brand group"
+            className="relative h-36 sm:h-44 md:h-48 lg:h-52 bg-foreground-2 rounded-3xl shadow cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 hover:-translate-y-1 duration-200 group"
           >
             {/* Progress Badge */}
             {item.progress && (

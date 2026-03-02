@@ -3,7 +3,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Topbar from "@/components/topbar";
-import TracingCanvas, { TracingCanvasRef } from "@/components/hijaiyah/TracingCanvas";
+import TracingCanvas, {
+  TracingCanvasRef,
+} from "@/components/hijaiyah/TracingCanvas";
 import Icon from "@/components/Icon";
 import { hijaiyahLetters, audioMapping } from "@/lib/data/hijaiyah-letters";
 import { useStudentProgress } from "@/contexts/StudentProgressContext";
@@ -20,7 +22,7 @@ const HijaiyahTracingDetailPage = () => {
   const router = useRouter();
   const { hijaiyahProgress, markHijaiyahCompleted } = useStudentProgress();
   const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
-  
+
   // Disable pull-to-refresh when component mounts (tracing canvas page)
   useEffect(() => {
     disablePullToRefresh();
@@ -28,7 +30,7 @@ const HijaiyahTracingDetailPage = () => {
       enablePullToRefresh();
     };
   }, [disablePullToRefresh, enablePullToRefresh]);
-  
+
   const index = parseInt(params.index as string) || 0;
   const letterData = hijaiyahLetters[index] || hijaiyahLetters[0];
   const letter = searchParams.get("letter") || letterData.arabic;
@@ -43,20 +45,26 @@ const HijaiyahTracingDetailPage = () => {
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isCompleted, setIsCompleted] = useState(isAlreadyCompleted);
-  const [feedback, setFeedback] = useState<FeedbackState>({ type: null, message: "" });
+  const [feedback, setFeedback] = useState<FeedbackState>({
+    type: null,
+    message: "",
+  });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorResult, setErrorResult] = useState<{ message: string; coverage: number } | null>(null);
+  const [errorResult, setErrorResult] = useState<{
+    message: string;
+    coverage: number;
+  } | null>(null);
 
   // Lock body scroll when any modal is open
   useEffect(() => {
     if (showSuccessModal || showErrorModal) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [showSuccessModal, showErrorModal]);
 
@@ -79,31 +87,34 @@ const HijaiyahTracingDetailPage = () => {
   // Handle Ctrl+Z keyboard shortcut for reset
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
         e.preventDefault();
         handleReset();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleReset]);
 
   // Show feedback with auto-hide (except for success)
-  const showFeedback = useCallback((type: FeedbackState["type"], message: string) => {
-    if (feedbackTimerRef.current) {
-      clearTimeout(feedbackTimerRef.current);
-    }
+  const showFeedback = useCallback(
+    (type: FeedbackState["type"], message: string) => {
+      if (feedbackTimerRef.current) {
+        clearTimeout(feedbackTimerRef.current);
+      }
 
-    setFeedback({ type, message });
+      setFeedback({ type, message });
 
-    // Auto-hide feedback after 3 seconds (except for success)
-    if (type !== "success") {
-      feedbackTimerRef.current = setTimeout(() => {
-        setFeedback({ type: null, message: "" });
-      }, 3000);
-    }
-  }, []);
+      // Auto-hide feedback after 3 seconds (except for success)
+      if (type !== "success") {
+        feedbackTimerRef.current = setTimeout(() => {
+          setFeedback({ type: null, message: "" });
+        }, 3000);
+      }
+    },
+    [],
+  );
 
   // Handle sound play
   const handlePlaySound = () => {
@@ -145,11 +156,11 @@ const HijaiyahTracingDetailPage = () => {
     if (index < hijaiyahLetters.length - 1) {
       const nextLetter = hijaiyahLetters[index + 1];
       router.push(
-        `/jejak-hijaiyah/tracing/${index + 1}?letter=${encodeURIComponent(nextLetter.arabic)}&pronunciation=${encodeURIComponent(nextLetter.latin)}`
+        `/jejak-hijaiyah/tracing/${index + 1}?letter=${encodeURIComponent(nextLetter.arabic)}&pronunciation=${encodeURIComponent(nextLetter.latin)}`,
       );
     } else if (fromModal) {
       // All letters completed
-      router.push('/jejak-hijaiyah');
+      router.push("/jejak-hijaiyah");
     }
     setShowSuccessModal(false);
   };
@@ -159,20 +170,26 @@ const HijaiyahTracingDetailPage = () => {
     if (index > 0) {
       const prevLetter = hijaiyahLetters[index - 1];
       router.push(
-        `/jejak-hijaiyah/tracing/${index - 1}?letter=${encodeURIComponent(prevLetter.arabic)}&pronunciation=${encodeURIComponent(prevLetter.latin)}`
+        `/jejak-hijaiyah/tracing/${index - 1}?letter=${encodeURIComponent(prevLetter.arabic)}&pronunciation=${encodeURIComponent(prevLetter.latin)}`,
       );
     }
   };
 
   return (
     <div className="w-full min-h-[82svh] pb-6 sm:pb-8 pt-20 md:pt-44 lg:pt-0 overflow-x-hidden px-2">
-      <Topbar title="Jejak Hijaiyah" />
+      <Topbar
+        title="Jejak Hijaiyah"
+        onBackClick={() => router.push("/jejak-hijaiyah")}
+      />
 
       {/* Already Completed Banner */}
       {isAlreadyCompleted && (
         <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3 mb-4 flex items-center justify-between max-w-3xl mx-auto">
           <div className="flex items-center gap-2">
-            <Icon name="RiCheckboxCircleFill" className="w-5 h-5 text-emerald-600" />
+            <Icon
+              name="RiCheckboxCircleFill"
+              className="w-5 h-5 text-emerald-600"
+            />
             <span className="text-emerald-700 font-medium text-sm sm:text-base">
               Huruf ini sudah selesai!
             </span>
@@ -187,25 +204,27 @@ const HijaiyahTracingDetailPage = () => {
             onClick={handlePrevLetter}
             disabled={index === 0}
             className={`p-2 rounded-full transition-all ${
-              index === 0 
-                ? 'bg-gray-100 text-gray-300 cursor-not-allowed' 
-                : 'bg-brown-brand text-white hover:opacity-90'
+              index === 0
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                : "bg-brown-brand text-white hover:opacity-90"
             }`}
           >
             <Icon name="RiArrowLeftSLine" className="w-6 h-6" />
           </button>
-          
+
           <div className="text-center">
-            <span className="text-gray-500 text-sm">Huruf {index + 1} dari {hijaiyahLetters.length}</span>
+            <span className="text-gray-500 text-sm">
+              Huruf {index + 1} dari {hijaiyahLetters.length}
+            </span>
           </div>
-          
+
           <button
             onClick={() => handleNextLetter()}
             disabled={index === hijaiyahLetters.length - 1}
             className={`p-2 rounded-full transition-all ${
-              index === hijaiyahLetters.length - 1 
-                ? 'bg-gray-100 text-gray-300 cursor-not-allowed' 
-                : 'bg-brown-brand text-white hover:opacity-90'
+              index === hijaiyahLetters.length - 1
+                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                : "bg-brown-brand text-white hover:opacity-90"
             }`}
           >
             <Icon name="RiArrowRightSLine" className="w-6 h-6" />
@@ -249,7 +268,10 @@ const HijaiyahTracingDetailPage = () => {
             onClick={handlePlaySound}
             className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-foreground flex items-center justify-center shadow-md hover:opacity-90 transition-all duration-200 active:scale-95 shrink-0"
           >
-            <Icon name="RiVolumeUpFill" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-gray-600" />
+            <Icon
+              name="RiVolumeUpFill"
+              className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-gray-600"
+            />
           </button>
 
           {/* Pronunciation Display */}
@@ -258,7 +280,10 @@ const HijaiyahTracingDetailPage = () => {
               ({pronunciation})
             </span>
             {isCompleted && (
-              <Icon name="RiCheckboxCircleFill" className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-600" />
+              <Icon
+                name="RiCheckboxCircleFill"
+                className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-600"
+              />
             )}
           </div>
 
@@ -278,8 +303,8 @@ const HijaiyahTracingDetailPage = () => {
               feedback.type === "success"
                 ? "bg-green-50 border-2 border-green-300"
                 : feedback.type === "warning"
-                ? "bg-orange-50 border-2 border-orange-300"
-                : "bg-red-50 border-2 border-red-300"
+                  ? "bg-orange-50 border-2 border-orange-300"
+                  : "bg-red-50 border-2 border-red-300"
             }`}
           >
             <Icon
@@ -287,15 +312,15 @@ const HijaiyahTracingDetailPage = () => {
                 feedback.type === "success"
                   ? "RiEmotionHappyFill"
                   : feedback.type === "warning"
-                  ? "RiRefreshLine"
-                  : "RiErrorWarningFill"
+                    ? "RiRefreshLine"
+                    : "RiErrorWarningFill"
               }
               className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 shrink-0 ${
                 feedback.type === "success"
                   ? "text-green-600"
                   : feedback.type === "warning"
-                  ? "text-orange-600"
-                  : "text-red-600"
+                    ? "text-orange-600"
+                    : "text-red-600"
               }`}
             />
             <span
@@ -303,8 +328,8 @@ const HijaiyahTracingDetailPage = () => {
                 feedback.type === "success"
                   ? "text-green-700"
                   : feedback.type === "warning"
-                  ? "text-orange-700"
-                  : "text-red-700"
+                    ? "text-orange-700"
+                    : "text-red-700"
               }`}
             >
               {feedback.message}
@@ -319,12 +344,15 @@ const HijaiyahTracingDetailPage = () => {
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
             <div className="text-center mb-6">
               <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Icon name="RiTrophyFill" className="w-10 h-10 text-emerald-600" />
+                <Icon
+                  name="RiTrophyFill"
+                  className="w-10 h-10 text-emerald-600"
+                />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Hebat! 🎉</h3>
-              <p className="text-gray-600">
-                Kamu berhasil menulis huruf
-              </p>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                Hebat! 🎉
+              </h3>
+              <p className="text-gray-600">Kamu berhasil menulis huruf</p>
               <div className="mt-3 text-6xl font-arabic text-emerald-700">
                 {letter}
               </div>
@@ -349,7 +377,7 @@ const HijaiyahTracingDetailPage = () => {
                     <Icon name="RiArrowRightLine" className="w-5 h-5" />
                   </>
                 ) : (
-                  'Selesai'
+                  "Selesai"
                 )}
               </button>
             </div>
@@ -365,9 +393,18 @@ const HijaiyahTracingDetailPage = () => {
               {/* Progress ring */}
               <div className="relative w-24 h-24 mx-auto mb-4">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
-                  <circle cx="48" cy="48" r="40" fill="none" stroke="#FEE2E2" strokeWidth="10" />
                   <circle
-                    cx="48" cy="48" r="40"
+                    cx="48"
+                    cy="48"
+                    r="40"
+                    fill="none"
+                    stroke="#FEE2E2"
+                    strokeWidth="10"
+                  />
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="40"
                     fill="none"
                     stroke="#F97316"
                     strokeWidth="10"
@@ -384,32 +421,52 @@ const HijaiyahTracingDetailPage = () => {
                 </div>
               </div>
 
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Belum Selesai</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{errorResult.message}</p>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Belum Selesai
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {errorResult.message}
+              </p>
             </div>
 
             {/* Tips based on coverage */}
-            <div className={`rounded-xl p-3 mb-5 flex items-start gap-2 ${
-              errorResult.coverage < 0.3
-                ? 'bg-red-50 border border-red-200'
-                : errorResult.coverage < 0.7
-                ? 'bg-orange-50 border border-orange-200'
-                : 'bg-yellow-50 border border-yellow-200'
-            }`}>
+            <div
+              className={`rounded-xl p-3 mb-5 flex items-start gap-2 ${
+                errorResult.coverage < 0.3
+                  ? "bg-red-50 border border-red-200"
+                  : errorResult.coverage < 0.7
+                    ? "bg-orange-50 border border-orange-200"
+                    : "bg-yellow-50 border border-yellow-200"
+              }`}
+            >
               <Icon
-                name={errorResult.coverage < 0.3 ? 'RiPencilLine' : 'RiInformationLine'}
+                name={
+                  errorResult.coverage < 0.3
+                    ? "RiPencilLine"
+                    : "RiInformationLine"
+                }
                 className={`w-5 h-5 shrink-0 mt-0.5 ${
-                  errorResult.coverage < 0.3 ? 'text-red-500' : errorResult.coverage < 0.7 ? 'text-orange-500' : 'text-yellow-600'
+                  errorResult.coverage < 0.3
+                    ? "text-red-500"
+                    : errorResult.coverage < 0.7
+                      ? "text-orange-500"
+                      : "text-yellow-600"
                 }`}
               />
-              <p className={`text-xs font-medium ${
-                errorResult.coverage < 0.3 ? 'text-red-700' : errorResult.coverage < 0.7 ? 'text-orange-700' : 'text-yellow-700'
-              }`}>
+              <p
+                className={`text-xs font-medium ${
+                  errorResult.coverage < 0.3
+                    ? "text-red-700"
+                    : errorResult.coverage < 0.7
+                      ? "text-orange-700"
+                      : "text-yellow-700"
+                }`}
+              >
                 {errorResult.coverage < 0.3
-                  ? 'Trace semua bagian huruf, termasuk titik-titiknya ya!'
+                  ? "Trace semua bagian huruf, termasuk titik-titiknya ya!"
                   : errorResult.coverage < 0.7
-                  ? 'Hampir! Pastikan semua garis huruf ter-trace dengan baik.'
-                  : 'Sedikit lagi! Periksa bagian kecil yang mungkin terlewat.'}
+                    ? "Hampir! Pastikan semua garis huruf ter-trace dengan baik."
+                    : "Sedikit lagi! Periksa bagian kecil yang mungkin terlewat."}
               </p>
             </div>
 

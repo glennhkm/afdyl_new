@@ -11,359 +11,313 @@ import {
 } from "@/lib/data/hijaiyah-game-data";
 import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
-// Initial values computed once
-const initialShuffledLetters = shuffleArray([...hijaiyahGameLetters]);
-const initialAudioIndices = hijaiyahGameLetters.map((_, i) => i);
-const initialAudioIndex = getRandomIndex([...initialAudioIndices]);
+// Generate 3 choices: 1 correct + 2 random wrong, shuffled
+function generateChoices(correctIndex: number): HijaiyahGameLetter[] {
+  const correct = hijaiyahGameLetters[correctIndex];
+  const pool = hijaiyahGameLetters.filter((_, i) => i !== correctIndex);
+  const wrong = shuffleArray(pool).slice(0, 2);
+  return shuffleArray([correct, ...wrong]);
+}
+
+const initialAvailableIndices = hijaiyahGameLetters.map((_, i) => i);
+const initialAudioIndex = getRandomIndex(initialAvailableIndices);
 
 const TebakHijaiyahPage = () => {
   const { disablePullToRefresh, enablePullToRefresh } = usePullToRefresh();
 
-  // Disable pull-to-refresh when component mounts (game page)
   useEffect(() => {
     disablePullToRefresh();
-    return () => {
-      enablePullToRefresh();
-    };
+    return () => enablePullToRefresh();
   }, [disablePullToRefresh, enablePullToRefresh]);
 
-  // Game state
-  const [shuffledLetters, setShuffledLetters] = useState<HijaiyahGameLetter[]>(initialShuffledLetters);
+  // ── Game state ─────────────────────────────────────────────────────────────
   const [currentAudioIndex, setCurrentAudioIndex] = useState(initialAudioIndex);
-  const [availableAudioIndices, setAvailableAudioIndices] = useState<number[]>(initialAudioIndices);
-  const [correctAnswers, setCorrectAnswers] = useState<Set<string>>(new Set());
+  const [availableAudioIndices, setAvailableAudioIndices] = useState<number[]>(initialAvailableIndices);
+  const [choices, setChoices] = useState<HijaiyahGameLetter[]>(() => generateChoices(initialAudioIndex));
+  const [correctAnswers, setCorrectAnswers] = useState(0);
   const [isGameCompleted, setIsGameCompleted] = useState(false);
-  const [centerCardIndex, setCenterCardIndex] = useState(2);
-  
-  // Lock body scroll when game completed modal is open
-  useEffect(() => {
-    if (isGameCompleted) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isGameCompleted]);
-  
-  // UI state
+
+  // ── UI state ───────────────────────────────────────────────────────────────
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [feedback, setFeedback] = useState<{ show: boolean; isCorrect: boolean; message: string }>({
     show: false,
     isCorrect: false,
     message: "",
   });
+  // Shown after every answer — hidden once user taps the sound button
+  const [showArrowHint, setShowArrowHint] = useState(true);
+  const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
   const [isInDropZone, setIsInDropZone] = useState(false);
-  
-  // Drag state - use refs for smooth performance (no re-renders during drag)
   const [isDragging, setIsDragging] = useState(false);
+
+  // ── Refs ───────────────────────────────────────────────────────────────────
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Drag tracking — all via refs to avoid re-renders during drag
   const dragCardIndexRef = useRef<number | null>(null);
   const dragElementRef = useRef<HTMLDivElement | null>(null);
   const startPosRef = useRef({ x: 0, y: 0 });
   const currentPosRef = useRef({ x: 0, y: 0 });
-  
-  // Refs
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
-  const cardsContainerRef = useRef<HTMLDivElement>(null);
-  const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  // true once direction confirmed as vertical (not horizontal scroll)
+  const isDragActiveRef = useRef(false);
+  // Prevents double-answer on rapid interaction
+  const isAnsweringRef = useRef(false);
+  // Always-current validateAnswer accessible from stable global listeners
+  const validateAnswerRef = useRef<(choiceIndex: number) => void>(() => {});
+  // Always-current checkDropZone
+  const checkDropZoneRef = useRef<(y: number) => boolean>(() => false);
+  // Fixed-position origin of the dragged card (used to animate it back on release)
+  const startFixedPosRef = useRef({ left: 0, top: 0 });
 
-  // Initialize game (for reset)
+  useEffect(() => {
+    document.body.style.overflow = isGameCompleted ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isGameCompleted]);
+
+  // ── Game logic ─────────────────────────────────────────────────────────────
   const initializeGame = useCallback(() => {
-    const shuffled = shuffleArray([...hijaiyahGameLetters]);
-    setShuffledLetters(shuffled);
     const indices = hijaiyahGameLetters.map((_, i) => i);
+    const idx = getRandomIndex(indices);
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
     setAvailableAudioIndices(indices);
-    setCorrectAnswers(new Set());
+    setCurrentAudioIndex(idx);
+    setChoices(generateChoices(idx));
+    setCorrectAnswers(0);
     setIsGameCompleted(false);
-    setCenterCardIndex(2);
     setFeedback({ show: false, isCorrect: false, message: "" });
-    
-    // Set initial audio index
-    const randomIndex = getRandomIndex(indices);
-    setCurrentAudioIndex(randomIndex);
+    setShowArrowHint(false);
+    setHasPlayedOnce(false);
+    setIsDragging(false);
+    isAnsweringRef.current = false;
+    isDragActiveRef.current = false;
+    dragCardIndexRef.current = null;
   }, []);
 
-  // Play audio for current letter
   const playCurrentAudio = useCallback(() => {
-    if (isGameCompleted) return;
-    
-    // Prevent double plays
-    if (isPlayingAudio) return;
+    if (isGameCompleted || isPlayingAudio) return;
     setIsPlayingAudio(true);
-    
+    setShowArrowHint(false); // user acknowledged hint
+    setHasPlayedOnce(true);
+
     const letter = hijaiyahGameLetters[currentAudioIndex];
-    if (!letter) {
-      setIsPlayingAudio(false);
-      return;
-    }
-    
-    // Stop previous audio if any
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    
+    if (!letter) { setIsPlayingAudio(false); return; }
+
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+
     const audio = new Audio(`/audio/${letter.audio}`);
     audioRef.current = audio;
-    
-    audio.onended = () => {
-      setIsPlayingAudio(false);
-    };
-    
-    audio.onerror = () => {
-      console.error("Audio error:", letter.audio);
-      setIsPlayingAudio(false);
-    };
-    
-    audio.play().catch((err) => {
-      console.error("Play error:", err);
-      setIsPlayingAudio(false);
-    });
+    audio.onended = () => setIsPlayingAudio(false);
+    audio.onerror = () => setIsPlayingAudio(false);
+    audio.play().catch(() => setIsPlayingAudio(false));
   }, [currentAudioIndex, isPlayingAudio, isGameCompleted]);
 
-  // Generate new question
-  const generateNewQuestion = useCallback(() => {
-    if (availableAudioIndices.length === 0) {
-      setIsGameCompleted(true);
-      return;
-    }
-    
-    const newIndex = getRandomIndex(availableAudioIndices);
-    setCurrentAudioIndex(newIndex);
+  const generateNewQuestion = useCallback((remaining: number[]) => {
+    if (remaining.length === 0) { setIsGameCompleted(true); return; }
+    const newIdx = getRandomIndex(remaining);
+    setCurrentAudioIndex(newIdx);
+    setChoices(generateChoices(newIdx));
     setFeedback({ show: false, isCorrect: false, message: "" });
-  }, [availableAudioIndices]);
+    isAnsweringRef.current = false;
+  }, []);
 
-  // Validate answer
-  const validateAnswer = useCallback((cardIndex: number) => {
-    if (isGameCompleted) return;
-    
-    const selectedLetter = shuffledLetters[cardIndex];
-    const correctLetter = hijaiyahGameLetters[currentAudioIndex];
-    const isCorrect = selectedLetter.name === correctLetter.name;
-    
-    // Clear previous timeout
-    if (feedbackTimeoutRef.current) {
-      clearTimeout(feedbackTimeoutRef.current);
-    }
-    
-    setFeedback({
-      show: true,
-      isCorrect,
-      message: isCorrect ? "Benar! 🎉" : "Salah! Coba lagi",
-    });
-    
-    // Play feedback audio
+  const validateAnswer = useCallback((choiceIndex: number) => {
+    if (isGameCompleted || isAnsweringRef.current) return;
+    isAnsweringRef.current = true;
+
+    const selected = choices[choiceIndex];
+    const correct = hijaiyahGameLetters[currentAudioIndex];
+    const isCorrect = selected.name === correct.name;
+
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+
+    setFeedback({ show: true, isCorrect, message: isCorrect ? "Benar! 🎉" : "Salah! Coba lagi" });
+    // Arrow hint always shown after answer — prompts user to tap audio again
+    setShowArrowHint(true);
+
     const feedbackAudio = new Audio(`/audio/${isCorrect ? "benar" : "salah"}.m4a`);
     feedbackAudio.play().catch(console.error);
-    
+
     if (isCorrect) {
-      // Update correct answers
-      setCorrectAnswers((prev) => new Set([...prev, correctLetter.name]));
-      
-      // Remove from available indices
-      setAvailableAudioIndices((prev) => prev.filter((i) => i !== currentAudioIndex));
-      
-      // Remove card from shuffled letters
-      setTimeout(() => {
-        setShuffledLetters((prev) => {
-          const newLetters = prev.filter((_, i) => i !== cardIndex);
-          // Adjust center index
-          if (centerCardIndex >= newLetters.length && newLetters.length > 0) {
-            setCenterCardIndex(newLetters.length - 1);
-          }
-          return newLetters;
-        });
-      }, 500);
-      
-      // Check if game completed
-      if (correctAnswers.size + 1 === hijaiyahGameLetters.length) {
-        setIsGameCompleted(true);
-      }
+      const newRemaining = availableAudioIndices.filter((i) => i !== currentAudioIndex);
+      setAvailableAudioIndices(newRemaining);
+      setCorrectAnswers((prev) => prev + 1);
+      feedbackTimeoutRef.current = setTimeout(() => generateNewQuestion(newRemaining), 1500);
+    } else {
+      feedbackTimeoutRef.current = setTimeout(() => {
+        // Wrong: clear feedback, reshuffle choices for variety
+        setChoices(generateChoices(currentAudioIndex));
+        setFeedback({ show: false, isCorrect: false, message: "" });
+        isAnsweringRef.current = false;
+      }, 1500);
     }
-    
-    // Generate new question after delay
-    feedbackTimeoutRef.current = setTimeout(() => {
-      generateNewQuestion();
-    }, 1500);
-  }, [shuffledLetters, currentAudioIndex, isGameCompleted, correctAnswers, centerCardIndex, generateNewQuestion]);
+  }, [choices, currentAudioIndex, isGameCompleted, availableAudioIndices, generateNewQuestion]);
 
-  // Handle card navigation
-  const navigateCards = (direction: "left" | "right") => {
-    setCenterCardIndex((prev) => {
-      if (direction === "left") {
-        return prev > 0 ? prev - 1 : prev;
-      } else {
-        return prev < shuffledLetters.length - 1 ? prev + 1 : prev;
-      }
-    });
-  };
+  // Keep refs in sync with latest callbacks
+  useEffect(() => { validateAnswerRef.current = validateAnswer; }, [validateAnswer]);
 
-  // Shuffle cards
-  const shuffleCards = () => {
-    setShuffledLetters((prev) => shuffleArray([...prev]));
-    setCenterCardIndex(Math.min(2, shuffledLetters.length - 1));
-  };
-
-  // Check if position is in drop zone
-  const checkDropZone = useCallback((clientY: number): boolean => {
+  const checkDropZone = useCallback((clientY: number) => {
     if (!dropZoneRef.current) return false;
     const rect = dropZoneRef.current.getBoundingClientRect();
     return clientY >= rect.top && clientY <= rect.bottom;
   }, []);
+  useEffect(() => { checkDropZoneRef.current = checkDropZone; }, [checkDropZone]);
 
-  // Mouse/Touch handlers for dragging - optimized for smooth performance
-  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent, cardIndex: number) => {
-    if (cardIndex !== centerCardIndex) return;
-    
-    // Prevent default to avoid text selection and scrolling
+  // ── Drag: per-card event handlers ──────────────────────────────────────────
+  // Mouse: always activate drag immediately
+  const handleMouseDown = useCallback((e: React.MouseEvent, cardIndex: number) => {
     e.preventDefault();
-    
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    
-    // Store refs for smooth updates
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+    currentPosRef.current = { x: 0, y: 0 };
     dragCardIndexRef.current = cardIndex;
-    startPosRef.current = { x: clientX, y: clientY };
-    currentPosRef.current = { x: 0, y: 0 };
-    
-    // Get the card element
-    const cardElement = cardRefs.current.get(cardIndex);
-    if (cardElement) {
-      dragElementRef.current = cardElement;
-      // Apply initial drag styles immediately
-      cardElement.style.transition = 'none';
-      cardElement.style.zIndex = '100';
-      cardElement.style.transform = 'scale(1.1)';
-      cardElement.style.opacity = '1';
+    isDragActiveRef.current = true;
+
+    const cardEl = cardRefs.current.get(cardIndex);
+    if (cardEl) {
+      const rect = cardEl.getBoundingClientRect();
+      startFixedPosRef.current = { left: rect.left, top: rect.top };
+      dragElementRef.current = cardEl;
+      cardEl.style.transition = "none";
+      cardEl.style.position = "fixed";
+      cardEl.style.left = `${rect.left}px`;
+      cardEl.style.top = `${rect.top}px`;
+      cardEl.style.width = `${rect.width}px`;
+      cardEl.style.height = `${rect.height}px`;
+      cardEl.style.margin = "0";
+      cardEl.style.zIndex = "9999";
+      cardEl.style.transform = "scale(1.12)";
     }
-    
     setIsDragging(true);
-  }, [centerCardIndex]);
+  }, []);
 
-  const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (dragCardIndexRef.current === null || !dragElementRef.current) return;
-    
-    // Prevent scrolling on touch devices
-    e.preventDefault();
-    
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    
-    const deltaX = clientX - startPosRef.current.x;
-    const deltaY = clientY - startPosRef.current.y;
-    
-    currentPosRef.current = { x: deltaX, y: deltaY };
-    
-    // Direct DOM manipulation for instant response (no React re-render)
-    dragElementRef.current.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.1)`;
-    
-    // Check drop zone
-    const inDropZone = checkDropZone(clientY);
-    setIsInDropZone(inDropZone);
-    
-    // Visual feedback for drop zone
-    if (inDropZone) {
-      dragElementRef.current.style.boxShadow = '0 0 20px rgba(34, 197, 94, 0.5)';
-    } else {
-      dragElementRef.current.style.boxShadow = '';
-    }
-  }, [checkDropZone]);
-
-  const handleDragEnd = useCallback(() => {
-    if (dragCardIndexRef.current === null) return;
-    
-    const cardIndex = dragCardIndexRef.current;
-    const element = dragElementRef.current;
-    const wasInDropZone = checkDropZone(startPosRef.current.y + currentPosRef.current.y);
-    
-    // Animate back to original position
-    if (element) {
-      element.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-      element.style.transform = 'scale(1)';
-      element.style.zIndex = '10';
-      element.style.boxShadow = '';
-      
-      // Reset opacity based on position
-      setTimeout(() => {
-        if (element) {
-          element.style.transition = '';
-          element.style.opacity = '';
-        }
-      }, 200);
-    }
-    
-    // Validate answer if dropped in zone
-    if (wasInDropZone) {
-      validateAnswer(cardIndex);
-    }
-    
-    // Reset refs
-    dragCardIndexRef.current = null;
-    dragElementRef.current = null;
+  // Touch: record start position; direction confirmed lazily in global move
+  const handleTouchStart = useCallback((e: React.TouchEvent, cardIndex: number) => {
+    const t = e.touches[0];
+    startPosRef.current = { x: t.clientX, y: t.clientY };
     currentPosRef.current = { x: 0, y: 0 };
-    
-    setIsDragging(false);
-    setIsInDropZone(false);
-  }, [checkDropZone, validateAnswer]);
+    dragCardIndexRef.current = cardIndex;
+    isDragActiveRef.current = false;
+  }, []);
 
-  // Add global mouse/touch listeners for drag
+  // ── Global move/end — registered once, uses refs for mutable values ────────
   useEffect(() => {
-    if (isDragging) {
-      const moveHandler = (e: MouseEvent | TouchEvent) => handleDragMove(e);
-      const endHandler = () => handleDragEnd();
-      
-      // Use passive: false to allow preventDefault
-      window.addEventListener("mousemove", moveHandler);
-      window.addEventListener("mouseup", endHandler);
-      window.addEventListener("touchmove", moveHandler, { passive: false });
-      window.addEventListener("touchend", endHandler);
-      window.addEventListener("touchcancel", endHandler);
-      
-      return () => {
-        window.removeEventListener("mousemove", moveHandler);
-        window.removeEventListener("mouseup", endHandler);
-        window.removeEventListener("touchmove", moveHandler);
-        window.removeEventListener("touchend", endHandler);
-        window.removeEventListener("touchcancel", endHandler);
-      };
-    }
-  }, [isDragging, handleDragMove, handleDragEnd]);
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      if (dragCardIndexRef.current === null) return;
 
-  // Progress calculation
-  const progress = correctAnswers.size / hijaiyahGameLetters.length;
+      const clientX = "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+      const deltaX = clientX - startPosRef.current.x;
+      const deltaY = clientY - startPosRef.current.y;
 
-  // Get visible cards (5 cards centered around centerCardIndex)
-  const getVisibleCards = () => {
-    const cards: { letter: HijaiyahGameLetter; index: number; position: number }[] = [];
-    
-    for (let i = -2; i <= 2; i++) {
-      const index = centerCardIndex + i;
-      if (index >= 0 && index < shuffledLetters.length) {
-        cards.push({
-          letter: shuffledLetters[index],
-          index,
-          position: i,
-        });
+      // Touch: determine drag direction at threshold
+      if ("touches" in e && !isDragActiveRef.current) {
+        if (Math.abs(deltaX) < 6 && Math.abs(deltaY) < 6) return;
+        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+          // Predominantly horizontal → let scroll container handle it
+          dragCardIndexRef.current = null;
+          return;
+        }
+        // Vertical → activate drag with fixed positioning (escapes overflow:hidden)
+        const cardEl = cardRefs.current.get(dragCardIndexRef.current!);
+        if (cardEl) {
+          const rect = cardEl.getBoundingClientRect();
+          startFixedPosRef.current = { left: rect.left, top: rect.top };
+          dragElementRef.current = cardEl;
+          cardEl.style.transition = "none";
+          cardEl.style.position = "fixed";
+          cardEl.style.left = `${rect.left}px`;
+          cardEl.style.top = `${rect.top}px`;
+          cardEl.style.width = `${rect.width}px`;
+          cardEl.style.height = `${rect.height}px`;
+          cardEl.style.margin = "0";
+          cardEl.style.zIndex = "9999";
+          cardEl.style.transform = "scale(1.12)";
+        }
+        isDragActiveRef.current = true;
+        setIsDragging(true);
       }
-    }
-    
-    return cards;
-  };
 
-  const visibleCards = getVisibleCards();
+      if (!isDragActiveRef.current || !dragElementRef.current) return;
+      e.preventDefault();
+
+      currentPosRef.current = { x: deltaX, y: deltaY };
+      dragElementRef.current.style.left = `${startFixedPosRef.current.left + deltaX}px`;
+      dragElementRef.current.style.top = `${startFixedPosRef.current.top + deltaY}px`;
+      dragElementRef.current.style.transform = "scale(1.12)";
+
+      const inZone = checkDropZoneRef.current(clientY);
+      setIsInDropZone(inZone);
+      dragElementRef.current.style.boxShadow = inZone ? "0 0 24px rgba(34,197,94,0.55)" : "";
+    };
+
+    const handleEnd = () => {
+      if (dragCardIndexRef.current === null) return;
+
+      const cardIndex = dragCardIndexRef.current;
+      const finalY = startPosRef.current.y + currentPosRef.current.y;
+      const wasInDropZone = isDragActiveRef.current && checkDropZoneRef.current(finalY);
+
+      if (dragElementRef.current) {
+        const el = dragElementRef.current;
+        el.style.transition = "left 0.2s ease-out, top 0.2s ease-out, transform 0.2s ease-out";
+        el.style.left = `${startFixedPosRef.current.left}px`;
+        el.style.top = `${startFixedPosRef.current.top}px`;
+        el.style.transform = "scale(1)";
+        el.style.zIndex = "";
+        el.style.boxShadow = "";
+        setTimeout(() => {
+          if (el) {
+            el.style.position = "";
+            el.style.left = "";
+            el.style.top = "";
+            el.style.width = "";
+            el.style.height = "";
+            el.style.margin = "";
+            el.style.transition = "";
+          }
+        }, 200);
+      }
+
+      if (wasInDropZone) validateAnswerRef.current(cardIndex);
+
+      dragCardIndexRef.current = null;
+      dragElementRef.current = null;
+      isDragActiveRef.current = false;
+      currentPosRef.current = { x: 0, y: 0 };
+      setIsDragging(false);
+      setIsInDropZone(false);
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove, { passive: false });
+    window.addEventListener("touchend", handleEnd);
+    window.addEventListener("touchcancel", handleEnd);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
+      window.removeEventListener("touchcancel", handleEnd);
+    };
+  // Registered once — all mutable state accessed through refs
+  }, []);
+
+  const progress = correctAnswers / hijaiyahGameLetters.length;
 
   return (
     <div className="w-full min-h-[76svh] sm:min-h-[80svh] overflow-hidden pb-6 sm:pb-8 md:pt-44 lg:pt-0">
       <Topbar title="Tebak Hijaiyah" />
 
       <div className="flex flex-col items-center gap-4 sm:gap-6 max-w-3xl mx-auto">
-        {/* Progress Bar */}
+
+        {/* ── Progress Bar ──────────────────────────────────────────────────── */}
         <div className="flex items-center gap-2 sm:gap-4 w-full px-1 sm:px-2">
           <span className="text-[#E37100] font-semibold min-w-10 sm:min-w-12.5 text-sm sm:text-base">
-            {correctAnswers.size}/{hijaiyahGameLetters.length}
+            {correctAnswers}/{hijaiyahGameLetters.length}
           </span>
           <div className="flex-1 h-1.5 sm:h-2 bg-gray-300 rounded-full overflow-hidden">
             <div
@@ -371,169 +325,206 @@ const TebakHijaiyahPage = () => {
               style={{ width: `${progress * 100}%` }}
             />
           </div>
-          <div
-            className={`p-1.5 sm:p-2 rounded-lg ${
-              progress >= 1 ? "bg-[#E37100]" : "bg-gray-300"
-            }`}
-          >
+          <div className={`p-1.5 sm:p-2 rounded-lg ${progress >= 1 ? "bg-[#E37100]" : "bg-gray-300"}`}>
             <span className="text-base sm:text-lg">🏁</span>
           </div>
         </div>
 
-        {/* Drop Zone */}
-        <div
-          ref={dropZoneRef}
-          className={`relative w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72 flex items-center justify-center transition-all duration-200 ${
-            isInDropZone ? "scale-105" : ""
-          }`}
-        >
-          {/* Dashed Border */}
+        {/* ── Drop Zone + Arrow Hint ────────────────────────────────────────── */}
+        <div className="relative flex flex-col items-center w-full">
+
           <div
-            className={`absolute inset-0 rounded-xl sm:rounded-2xl border-3 sm:border-4 border-dashed pointer-events-none transition-colors duration-200 ${
-              isInDropZone ? "border-green-500 bg-green-50/30" : "border-gray-400"
+            ref={dropZoneRef}
+            className={`relative w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72 flex items-center justify-center transition-all duration-200 ${
+              isInDropZone ? "scale-105" : ""
             }`}
-          />
-          
-          {/* Sound Button */}
-          <button
-            type="button"
-            onClick={playCurrentAudio}
-            disabled={isGameCompleted}
-            className={`relative z-10 w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-200 ${
-              isPlayingAudio
-                ? "bg-foreground scale-110"
-                : "bg-foreground hover:bg-foreground/80 active:scale-95"
-            } ${isGameCompleted ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           >
-            <Icon
-              name={isPlayingAudio ? "RiVolumeUpFill" : "RiVolumeUpLine"}
-              className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 ${
-                isPlayingAudio ? "text-white" : "text-gray-600"
+            <div
+              className={`absolute inset-0 rounded-xl sm:rounded-2xl border-3 sm:border-4 border-dashed pointer-events-none transition-colors duration-200 ${
+                isInDropZone ? "border-green-500 bg-green-50/30" : "border-gray-400"
               }`}
             />
-          </button>
 
-          {/* Hint text */}
-          {!isPlayingAudio && !isGameCompleted && (
-            <p className="absolute bottom-2 sm:bottom-4 text-xs sm:text-sm text-gray-500 text-center px-2 sm:px-4 pointer-events-none">
-              Tap untuk dengar huruf
-            </p>
-          )}
+            {/* Arrow hint — inside dropzone, points down toward the sound button */}
+            {showArrowHint && (
+              <div className="absolute top-3 sm:top-5 left-1/2 -translate-x-1/2 flex flex-col items-center z-20 pointer-events-none">
+                <span className="text-sm sm:text-base font-bold text-amber-600 whitespace-nowrap drop-shadow-sm">
+                  {hasPlayedOnce ? "Dengar lagi!" : "Dengar!"}
+                </span>
+                <div className="animate-bounce mt-1">
+                  <Icon name="RiArrowDownLine" className="w-7 h-7 sm:w-9 sm:h-9 text-amber-500" />
+                </div>
+              </div>
+            )}
+
+            {/* Sound button — pulses with amber ring while hint is shown */}
+            <button
+              type="button"
+              onClick={playCurrentAudio}
+              disabled={isGameCompleted}
+              className={`relative z-10 w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-200
+                ${isPlayingAudio ? "bg-foreground scale-110" : "bg-foreground hover:bg-foreground/80 active:scale-95"}
+                ${isGameCompleted ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                ${showArrowHint && !isPlayingAudio ? "ring-4 ring-amber-400 ring-offset-2 animate-pulse" : ""}
+              `}
+            >
+              <Icon
+                name={isPlayingAudio ? "RiVolumeUpFill" : "RiVolumeUpLine"}
+                className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 ${isPlayingAudio ? "text-white" : "text-gray-600"}`}
+              />
+            </button>
+
+            {!isPlayingAudio && !isGameCompleted && !showArrowHint && (
+              <p className="absolute bottom-2 sm:bottom-4 text-xs sm:text-sm text-gray-500 text-center px-2 sm:px-4 pointer-events-none">
+                Tap untuk dengar huruf
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Flashcards */}
-        <div 
-          ref={cardsContainerRef}
-          className="relative w-full flex justify-center items-end gap-1.5 sm:gap-2 md:gap-3 min-h-32 sm:min-h-40 px-2 sm:px-4 -mt-2 sm:-mt-4"
-        >
-          {visibleCards.map(({ letter, index, position }) => {
-            const isCenter = position === 0;
-            const scale = isCenter ? 1 : 0.8;
-            const opacity = isCenter ? 1 : 0.5;
-            
-            return (
+        {/* ── 3 Choice Cards — horizontally scrollable & draggable ─────────── */}
+        <div className="w-full flex flex-col items-center gap-2 py-3">
+          {/* Hide scrollbar */}
+          <style>{`.cards-scroll::-webkit-scrollbar{display:none}`}</style>
+
+          <div
+            ref={scrollContainerRef}
+            className="cards-scroll w-full flex gap-5 sm:gap-7 overflow-x-auto px-8 sm:px-16 pb-2"
+            style={{
+              scrollSnapType: "x mandatory",
+              WebkitOverflowScrolling: "touch",
+              scrollbarWidth: "none",
+              justifyContent: "safe center",
+            }}
+          >
+            {choices.map((letter, index) => (
               <div
                 key={`${letter.name}-${index}`}
-                ref={(el) => {
-                  if (el) cardRefs.current.set(index, el);
-                  else cardRefs.current.delete(index);
-                }}
-                className={`relative select-none ${isCenter ? "z-10" : "z-0"}`}
-                style={{
-                  transform: `scale(${scale})`,
-                  opacity: opacity,
-                  cursor: isCenter ? "grab" : "default",
-                  touchAction: isCenter ? "none" : "auto",
-                  willChange: isCenter ? "transform" : "auto",
-                }}
-                onMouseDown={(e) => handleDragStart(e, index)}
-                onTouchStart={(e) => handleDragStart(e, index)}
+                className="shrink-0 select-none w-24 h-28 sm:w-28 sm:h-32 md:w-32 md:h-36"
+                style={{ scrollSnapAlign: "center", touchAction: "pan-x" }}
+                onMouseDown={(e) => handleMouseDown(e, index)}
+                onTouchStart={(e) => handleTouchStart(e, index)}
               >
                 <div
-                  className={`w-20 h-24 sm:w-24 sm:h-28 md:w-28 md:h-32 border border-black/20 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-lg bg-background-2 ${
-                    isCenter ? "shadow-xl" : "shadow-md"
+                  ref={(el) => {
+                    if (el) cardRefs.current.set(index, el);
+                    else cardRefs.current.delete(index);
+                  }}
+                  className={`w-24 h-28 sm:w-28 sm:h-32 md:w-32 md:h-36 border rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg bg-background-2 cursor-grab active:cursor-grabbing transition-shadow duration-150 ${
+                    isDragging ? "border-black/10" : "border-black/20 hover:shadow-xl"
                   }`}
                 >
-                  <span className="font-arabic text-3xl sm:text-4xl md:text-5xl text-brown-brand font-bold pointer-events-none">
+                  <span className="font-arabic text-4xl sm:text-5xl text-brown-brand font-bold pointer-events-none select-none">
                     {letter.letter}
                   </span>
                 </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          <p className="text-xs text-gray-400">
+            Geser kartu ke atas kotak untuk menjawab
+          </p>
         </div>
 
-        {/* Pagination Dots */}
-        {/* <div className="flex gap-2 mt-2">
-          {shuffledLetters.slice(0, Math.min(5, shuffledLetters.length)).map((_, i) => (
-            <div
-              key={i}
-              className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                i === Math.min(centerCardIndex, 4) ? "bg-foreground w-4" : "bg-gray-300"
-              }`}
-            />
-          ))}
-        </div> */}
-
-        {/* Navigation & Shuffle Buttons */}
-        <div className="flex items-center gap-2 sm:gap-4 mt-4 lg:mt-0">
-          <button
-            onClick={() => navigateCards("left")}
-            disabled={centerCardIndex === 0}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-foreground flex items-center justify-center disabled:opacity-30"
-          >
-            <Icon name="RiArrowLeftSLine" className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
-          </button>
-          
-          <button
-            onClick={shuffleCards}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-foreground-2 text-black font-medium flex items-center gap-1.5 sm:gap-2 hover:bg-foreground-2/60 duration-200 text-sm sm:text-base"
-          >
-            <Icon name="RiShuffleLine" className="w-4 h-4 sm:w-5 sm:h-5" />
-            Acak
-          </button>
-          
-          <button
-            onClick={() => navigateCards("right")}
-            disabled={centerCardIndex >= shuffledLetters.length - 1}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-foreground flex items-center justify-center disabled:opacity-30"
-          >
-            <Icon name="RiArrowRightSLine" className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
-          </button>
-        </div>
-
-        {/* Feedback Message */}
+        {/* ── Feedback modal ──────────────────────────────────────────── */}
         {feedback.show && (
-          <div
-            className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-xl z-50 animate-bounce ${
-              feedback.isCorrect ? "bg-green-500" : "bg-red-500"
-            }`}
-          >
-            <span className="text-white text-lg sm:text-2xl font-bold">{feedback.message}</span>
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none" style={{ animation: "tebak-fade-in 0.2s ease-out forwards" }}>
+            <div
+              className="pointer-events-none"
+              style={{ animation: "tebak-bounce-in 0.45s ease-out forwards" }}
+            >
+              {feedback.isCorrect ? (
+                <div className="bg-white rounded-3xl px-10 py-8 text-center shadow-2xl max-w-80">
+                  {/* Correct SVG – star with checkmark */}
+                  <svg viewBox="0 0 120 120" className="w-32 h-32 mx-auto mb-3 drop-shadow-md">
+                    <circle cx="60" cy="60" r="52" fill="#D1FAE5" />
+                    <circle cx="60" cy="60" r="42" fill="#6EE7B7" />
+                    <circle cx="60" cy="60" r="32" fill="#14AE5C" />
+                    <polyline points="42,62 55,74 78,48" fill="none" stroke="white" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+                    {/* sparkles */}
+                    <circle cx="18" cy="22" r="4" fill="#FBBF24" opacity="0.8" />
+                    <circle cx="102" cy="18" r="3" fill="#FBBF24" opacity="0.7" />
+                    <circle cx="105" cy="95" r="3.5" fill="#34D399" opacity="0.6" />
+                    <circle cx="15" cy="90" r="3" fill="#FBBF24" opacity="0.6" />
+                  </svg>
+                  <h3 className="text-2xl font-bold text-gray-800">Benar! 🎉</h3>
+                  <p className="text-base text-gray-500 mt-1">Hebat sekali!</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-3xl px-10 py-8 text-center shadow-2xl max-w-80">
+                  {/* Wrong SVG – sad face */}
+                  <svg viewBox="0 0 120 120" className="w-32 h-32 mx-auto mb-3 drop-shadow-md">
+                    <circle cx="60" cy="60" r="52" fill="#FEE2E2" />
+                    <circle cx="60" cy="60" r="42" fill="#FCA5A5" />
+                    <circle cx="60" cy="60" r="32" fill="#E53E3E" />
+                    {/* X mark */}
+                    <line x1="47" y1="47" x2="73" y2="73" stroke="white" strokeWidth="7" strokeLinecap="round" />
+                    <line x1="73" y1="47" x2="47" y2="73" stroke="white" strokeWidth="7" strokeLinecap="round" />
+                    {/* tear drops */}
+                    <ellipse cx="22" cy="85" rx="4" ry="6" fill="#93C5FD" opacity="0.5" />
+                    <ellipse cx="98" cy="88" rx="3" ry="5" fill="#93C5FD" opacity="0.4" />
+                  </svg>
+                  <h3 className="text-2xl font-bold text-gray-800">Salah!</h3>
+                  <p className="text-base text-gray-500 mt-1">Coba lagi yaa</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Game Completed Dialog */}
+        {/* ── Game Completed dialog ─────────────────────────────────────────── */}
         {isGameCompleted && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl">
-              <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">🎉</div>
-              <h2 className="text-xl sm:text-2xl font-bold text-black mb-2">Selamat!</h2>
-              <p className="text-sm sm:text-base text-black/70 mb-4 sm:mb-6">
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" style={{ animation: "tebak-fade-in 0.25s ease-out forwards" }}>
+            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-[320px] w-full text-center shadow-2xl" style={{ animation: "tebak-bounce-in 0.5s ease-out forwards" }}>
+              {/* Trophy illustration */}
+              <svg viewBox="0 0 160 180" className="w-36 h-40 mx-auto drop-shadow-lg">
+                {/* Ribbon left */}
+                <path d="M52 5 L68 75 L80 65 L72 5 Z" fill="#2DD4BF" />
+                {/* Ribbon right */}
+                <path d="M108 5 L92 75 L80 65 L88 5 Z" fill="#14B8A6" />
+                {/* Medal outer */}
+                <circle cx="80" cy="110" r="50" fill="#F59E0B" />
+                <circle cx="80" cy="110" r="43" fill="#FBBF24" stroke="#F59E0B" strokeWidth="2" />
+                <circle cx="80" cy="110" r="36" fill="#F59E0B" opacity="0.3" />
+                {/* Star */}
+                <polygon points="80,78 88,98 110,98 92,110 98,130 80,118 62,130 68,110 50,98 72,98" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1" />
+                {/* Sparkles */}
+                <circle cx="35" cy="50" r="4" fill="#FBBF24" opacity="0.8" />
+                <circle cx="125" cy="40" r="3" fill="#FBBF24" opacity="0.7" />
+                <circle cx="135" cy="90" r="4" fill="#F59E0B" opacity="0.6" />
+                <circle cx="25" cy="95" r="3" fill="#FBBF24" opacity="0.7" />
+                <circle cx="45" cy="160" r="3" fill="#FBBF24" opacity="0.5" />
+                <circle cx="115" cy="165" r="4" fill="#F59E0B" opacity="0.5" />
+              </svg>
+              <h2 className="text-2xl font-bold text-gray-800 mt-3">Selamat! 🎉</h2>
+              <p className="text-gray-500 mt-1 text-sm">
                 Kamu berhasil mengenali semua huruf hijaiyah!
               </p>
-              <div className="flex gap-3 sm:gap-4">
-                <button
-                  onClick={initializeGame}
-                  className="flex-1 py-2.5 sm:py-3 px-4 sm:px-6 rounded-full bg-[#E37100] text-white font-semibold hover:opacity-90 transition-opacity text-sm sm:text-base"
-                >
-                  Main Lagi
-                </button>
-              </div>
+              <button
+                onClick={initializeGame}
+                className="mt-5 w-full bg-[#E37100] text-white py-3 rounded-full font-semibold text-base hover:bg-[#d06800] transition shadow-md"
+              >
+                Main Lagi
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Scoped animations */}
+      <style jsx global>{`
+        @keyframes tebak-bounce-in {
+          0% { opacity: 0; transform: scale(0.3); }
+          50% { opacity: 1; transform: scale(1.05); }
+          70% { transform: scale(0.95); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes tebak-fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 };
