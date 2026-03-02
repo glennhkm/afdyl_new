@@ -42,7 +42,7 @@ const TracingCanvas = forwardRef<TracingCanvasRef, TracingCanvasProps>(
     const [allTraces, setAllTraces] = useState<Point[][]>([]);
     const [validatedTraces, setValidatedTraces] = useState<Record<number, boolean>>({});
     const [canvasSize, setCanvasSize] = useState({ width: 350, height: 350 });
-    const strokeWidth = 36;
+    const strokeWidth = 86;
 
     // ── Cached offscreen canvases (avoid GC pressure during drawing) ──
     const strokeMaskRef = useRef<HTMLCanvasElement | null>(null);

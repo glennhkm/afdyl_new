@@ -33,18 +33,48 @@ import {
 import { usePullToRefresh } from "@/contexts/PullToRefreshContext";
 
 // ============================================
+// PLATFORM DETECTION
+// ============================================
+type DevicePlatform = "ios" | "android" | "desktop";
+
+function detectDevicePlatform(): DevicePlatform {
+  if (typeof navigator === "undefined") return "desktop";
+  const ua = navigator.userAgent || "";
+  // iPadOS 13+ reports as MacIntel — detect via maxTouchPoints
+  if (
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  ) {
+    return "ios";
+  }
+  if (/Android/i.test(ua)) return "android";
+  return "desktop";
+}
+
+// ============================================
 // GAME CONFIGURATION
 // ============================================
+// Fall speeds are in **pixels per second** (frame-rate independent via delta-time).
+// This eliminates speed differences between 60 Hz Android and 120 Hz ProMotion iOS.
+const PLATFORM_SPEED: Record<
+  DevicePlatform,
+  { base: number; increment: number }
+> = {
+  desktop: { base: 100, increment: 25 },
+  ios:     { base: 70, increment: 25 },
+  android: { base: 160, increment: 25 },
+};
+
+const PLATFORM_COLLISION_SCALE: Record<DevicePlatform, number> = {
+  desktop: 1.0,
+  ios: 0.4,
+  android: 0.4,
+};
+
 const GAME_CONFIG = {
   LANES: 3,
-  INITIAL_FALL_SPEED: 4.5,
-  INITIAL_FALL_SPEED_MOBILE: 6,
-  SPEED_INCREMENT: 1.2,
-  SPEED_INCREMENT_MOBILE: 0.8,
   CARD_WIDTH: 136,
   CARD_HEIGHT: 136,
-  COLLISION_SCALE_DESKTOP: 1.0,
-  COLLISION_SCALE_MOBILE: 0.4,
   SPAWN_INTERVAL_INITIAL: 500,
   SPAWN_INTERVAL_MIN: 500,
   ROUND_DELAY: 2000,
@@ -297,6 +327,19 @@ const TangkapHijaiyahGame = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
+  // Platform & frame timing
+  const platformRef = useRef<DevicePlatform>("desktop");
+  const lastFrameTimeRef = useRef<number>(0);
+
+  // Hand detection guards & refs
+  const isDetectingRef = useRef(false);
+  const handDetectedRef = useRef(false);
+  const overlayDimsSetRef = useRef(false);
+  const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Card DOM refs for direct manipulation (avoids React re-render per frame)
+  const cardElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
+
   // Spawn guards
   const isSpawningRef = useRef<boolean>(false);
   const currentRoundIdRef = useRef<string>("");
@@ -327,7 +370,7 @@ const TangkapHijaiyahGame = () => {
   });
 
   const [currentRound, setCurrentRound] = useState<GameRound | null>(null);
-  const [handResult, setHandResult] = useState<HandTrackingResult | null>(null);
+  const [isHandDetected, setIsHandDetected] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [catchEffects, setCatchEffects] = useState<CatchEffect[]>([]);
@@ -351,10 +394,6 @@ const TangkapHijaiyahGame = () => {
   }, [currentRound]);
 
   useEffect(() => {
-    handResultRef.current = handResult;
-  }, [handResult]);
-
-  useEffect(() => {
     gameDimensionsRef.current = { width: gameWidth, height: gameHeight };
   }, [gameWidth, gameHeight]);
 
@@ -364,6 +403,11 @@ const TangkapHijaiyahGame = () => {
     if (saved) {
       setGameState((prev) => ({ ...prev, highScore: parseInt(saved) }));
     }
+  }, []);
+
+  // Detect platform once on mount (iOS / Android / desktop)
+  useEffect(() => {
+    platformRef.current = detectDevicePlatform();
   }, []);
 
   // Scroll to top when game starts
@@ -557,17 +601,9 @@ const TangkapHijaiyahGame = () => {
     const allCards = [targetCard, distractorCard1, distractorCard2];
     const positions = shuffleArray([0, 1, 2]);
 
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.innerWidth < GAME_CONFIG.MOBILE_BREAKPOINT;
-    const baseSpeed = isMobile
-      ? GAME_CONFIG.INITIAL_FALL_SPEED_MOBILE
-      : GAME_CONFIG.INITIAL_FALL_SPEED;
-    const speedIncrement = isMobile
-      ? GAME_CONFIG.SPEED_INCREMENT_MOBILE
-      : GAME_CONFIG.SPEED_INCREMENT;
+    const { base, increment } = PLATFORM_SPEED[platformRef.current];
     const currentLevel = gameStateRef.current?.level ?? 1;
-    const speed = baseSpeed + (currentLevel - 1) * speedIncrement;
+    const speed = base + (currentLevel - 1) * increment; // px/s (delta-time based)
 
     const roundId = `round-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     currentRoundIdRef.current = roundId;
@@ -646,75 +682,96 @@ const TangkapHijaiyahGame = () => {
     [laneWidth],
   );
 
-  // Detect hand position
+  // Detect hand position — runs on its own interval, never inside rAF.
+  // Uses re-entry guard so overlapping ML calls are impossible.
   const detectPosition = useCallback(async () => {
+    if (isDetectingRef.current) return;          // skip if previous call still running
     if (!videoRef.current || !canvasRef.current || !isHandTrackingReady) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (video.readyState !== 4) return;
 
-    const width = video.videoWidth || 640;
-    const height = video.videoHeight || 480;
-    canvas.width = width;
-    canvas.height = height;
+    isDetectingRef.current = true;
+    try {
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
+      canvas.width = width;
+      canvas.height = height;
 
-    const result = await detectHands(video, width, height);
-    setHandResult(result);
+      const result = await detectHands(video, width, height);
 
-    if (overlayCanvasRef.current && result.detected) {
-      const overlayCtx = overlayCanvasRef.current.getContext("2d");
-      if (overlayCtx) {
-        overlayCanvasRef.current.width = gameWidth;
-        overlayCanvasRef.current.height = gameHeight;
-        overlayCtx.clearRect(0, 0, gameWidth, gameHeight);
+      // Write directly to ref — game loop reads this without React re-render
+      handResultRef.current = result;
 
-        const scaleX = gameWidth / width;
-        const scaleY = gameHeight / height;
-        const scaledResult: HandTrackingResult = {
-          ...result,
-          landmarks:
-            result.landmarks?.map((lm) => ({
-              x: lm.x * scaleX,
-              y: lm.y * scaleY,
-              z: lm.z,
-            })) || null,
-          palmCenter: result.palmCenter
-            ? {
-                x: result.palmCenter.x * scaleX,
-                y: result.palmCenter.y * scaleY,
-              }
-            : null,
-          fingertips:
-            result.fingertips?.map((ft) => ({
-              x: ft.x * scaleX,
-              y: ft.y * scaleY,
-            })) || null,
-          boundingBox: result.boundingBox
-            ? {
-                x: result.boundingBox.x * scaleX,
-                y: result.boundingBox.y * scaleY,
-                width: result.boundingBox.width * scaleX,
-                height: result.boundingBox.height * scaleY,
-              }
-            : null,
-        };
-
-        const isMobileDevice =
-          typeof window !== "undefined" &&
-          window.innerWidth < GAME_CONFIG.MOBILE_BREAKPOINT;
-        drawHandSkeleton(overlayCtx, scaledResult, gameWidth, gameHeight, {
-          lineColor: "rgba(20, 174, 92, 0.6)",
-          jointColor: "rgba(227, 113, 0, 0.7)",
-          lineWidth: isMobileDevice ? 2 : 3,
-          jointRadius: isMobileDevice ? 3 : 6,
-          mirrorX: true,
-        });
+      // Throttled UI flag: only trigger React re-render when detected state changes
+      if (result.detected !== handDetectedRef.current) {
+        handDetectedRef.current = result.detected;
+        setIsHandDetected(result.detected);
       }
-    } else if (overlayCanvasRef.current) {
-      const overlayCtx = overlayCanvasRef.current.getContext("2d");
-      if (overlayCtx) overlayCtx.clearRect(0, 0, gameWidth, gameHeight);
+
+      // Draw hand skeleton on overlay
+      const { width: gw, height: gh } = gameDimensionsRef.current;
+      if (overlayCanvasRef.current && result.detected) {
+        const overlayCtx = overlayCanvasRef.current.getContext("2d");
+        if (overlayCtx) {
+          // Set canvas buffer size only once (avoids expensive GPU re-alloc every frame)
+          if (!overlayDimsSetRef.current || overlayCanvasRef.current.width !== gw || overlayCanvasRef.current.height !== gh) {
+            overlayCanvasRef.current.width = gw;
+            overlayCanvasRef.current.height = gh;
+            overlayDimsSetRef.current = true;
+          }
+          overlayCtx.clearRect(0, 0, gw, gh);
+
+          const scaleX = gw / width;
+          const scaleY = gh / height;
+          const scaledResult: HandTrackingResult = {
+            ...result,
+            landmarks:
+              result.landmarks?.map((lm) => ({
+                x: lm.x * scaleX,
+                y: lm.y * scaleY,
+                z: lm.z,
+              })) || null,
+            palmCenter: result.palmCenter
+              ? {
+                  x: result.palmCenter.x * scaleX,
+                  y: result.palmCenter.y * scaleY,
+                }
+              : null,
+            fingertips:
+              result.fingertips?.map((ft) => ({
+                x: ft.x * scaleX,
+                y: ft.y * scaleY,
+              })) || null,
+            boundingBox: result.boundingBox
+              ? {
+                  x: result.boundingBox.x * scaleX,
+                  y: result.boundingBox.y * scaleY,
+                  width: result.boundingBox.width * scaleX,
+                  height: result.boundingBox.height * scaleY,
+                }
+              : null,
+          };
+
+          const isMobileDevice =
+            typeof window !== "undefined" &&
+            window.innerWidth < GAME_CONFIG.MOBILE_BREAKPOINT;
+          drawHandSkeleton(overlayCtx, scaledResult, gw, gh, {
+            lineColor: "rgba(20, 174, 92, 0.6)",
+            jointColor: "rgba(227, 113, 0, 0.7)",
+            lineWidth: isMobileDevice ? 2 : 3,
+            jointRadius: isMobileDevice ? 3 : 6,
+            mirrorX: true,
+          });
+        }
+      } else if (overlayCanvasRef.current) {
+        const overlayCtx = overlayCanvasRef.current.getContext("2d");
+        if (overlayCtx) overlayCtx.clearRect(0, 0, gw, gh);
+      }
+    } finally {
+      isDetectingRef.current = false;
     }
-  }, [isHandTrackingReady, gameWidth, gameHeight]);
+  }, [isHandTrackingReady]);
 
   // Process cards
   const processCards = useCallback(
@@ -724,6 +781,7 @@ const TangkapHijaiyahGame = () => {
       gWidth: number,
       gHeight: number,
       getLaneCenterFn: (lane: number) => number,
+      deltaSec: number,
     ): {
       updatedCards: FallingCard[];
       caughtCard: FallingCard | null;
@@ -736,15 +794,10 @@ const TangkapHijaiyahGame = () => {
 
       const updatedCards = roundData.cards.map((card) => {
         if (card.caught || card.missed) return card;
-        const newY = card.y + card.speed;
+        const newY = card.y + card.speed * deltaSec;
 
         if (handResult?.detected && handResult?.landmarks) {
-          const isMobile =
-            typeof window !== "undefined" &&
-            window.innerWidth < GAME_CONFIG.MOBILE_BREAKPOINT;
-          const collisionScale = isMobile
-            ? GAME_CONFIG.COLLISION_SCALE_MOBILE
-            : GAME_CONFIG.COLLISION_SCALE_DESKTOP;
+          const collisionScale = PLATFORM_COLLISION_SCALE[platformRef.current];
           const scaledWidth = GAME_CONFIG.CARD_WIDTH * collisionScale;
           const scaledHeight = GAME_CONFIG.CARD_HEIGHT * collisionScale;
 
@@ -811,7 +864,7 @@ const TangkapHijaiyahGame = () => {
   );
 
   // ============================================
-  // GAME LOOP
+  // GAME LOOP  (pure rAF — no async work, no ML calls)
   // ============================================
   const gameLoop = useCallback(
     (timestamp: number) => {
@@ -822,7 +875,15 @@ const TangkapHijaiyahGame = () => {
 
       if (!currentGameState || currentGameState.status !== "playing") return;
 
-      detectPosition();
+      // Frame-rate independent delta time (capped to prevent jumps on tab switch)
+      const rawDelta =
+        lastFrameTimeRef.current > 0
+          ? (timestamp - lastFrameTimeRef.current) / 1000
+          : 1 / 60;
+      const deltaSec = Math.min(rawDelta, 0.05); // cap at 50ms (~20fps min)
+      lastFrameTimeRef.current = timestamp;
+
+      // Hand detection runs on its own interval — NOT here.
 
       const timeSinceRoundEnd = timestamp - roundEndTimeRef.current;
       const roundIsInactive = !currentRoundData?.isActive;
@@ -848,6 +909,7 @@ const TangkapHijaiyahGame = () => {
           gWidth,
           gHeight,
           getLaneCenter,
+          deltaSec,
         );
 
         if (processedResult.hasChanges) {
@@ -857,7 +919,23 @@ const TangkapHijaiyahGame = () => {
             isActive: !processedResult.roundEnded,
           };
           currentRoundRef.current = updatedRound;
-          setCurrentRound(updatedRound);
+
+          // Direct DOM manipulation for card positions (no React re-render per frame)
+          for (const card of processedResult.updatedCards) {
+            if (card.caught || card.missed) {
+              const el = cardElementsRef.current.get(card.id);
+              if (el) el.style.display = "none";
+              continue;
+            }
+            const el = cardElementsRef.current.get(card.id);
+            if (el) el.style.top = `${card.y}px`;
+          }
+
+          // Only trigger React re-render when the round actually ends
+          // (catch, miss, or all cards gone) — NOT on every frame
+          if (processedResult.roundEnded) {
+            setCurrentRound(updatedRound);
+          }
 
           if (processedResult.caughtCard) {
             const { caughtCard } = processedResult;
@@ -969,6 +1047,7 @@ const TangkapHijaiyahGame = () => {
           // All cards missed
           if (processedResult.allMissed && !processedResult.caughtCard) {
             roundEndTimeRef.current = performance.now();
+            setCurrentRound(updatedRound);
             playWrongSFX();
             if (!lifeDeductedForRoundRef.current) {
               lifeDeductedForRoundRef.current = true;
@@ -998,7 +1077,7 @@ const TangkapHijaiyahGame = () => {
 
       animationFrameRef.current = requestAnimationFrame(gameLoop);
     },
-    [detectPosition, spawnRound, getLaneCenter, addCatchEffect, processCards],
+    [spawnRound, getLaneCenter, addCatchEffect, processCards],
   );
 
   // ============================================
@@ -1028,6 +1107,7 @@ const TangkapHijaiyahGame = () => {
     setCatchEffects([]);
     setCountdown(3);
     roundEndTimeRef.current = 0;
+    lastFrameTimeRef.current = 0;
     isSpawningRef.current = false;
     currentRoundIdRef.current = "";
     lifeDeductedForRoundRef.current = false;
@@ -1120,21 +1200,28 @@ const TangkapHijaiyahGame = () => {
   useEffect(() => {
     if (gameState.status === "playing") {
       lastSpawnTimeRef.current = performance.now();
+      lastFrameTimeRef.current = 0; // reset to avoid large delta on resume
       animationFrameRef.current = requestAnimationFrame(gameLoop);
     }
     return () => cancelAnimationFrame(animationFrameRef.current);
   }, [gameState.status, gameLoop]);
 
-  // Run tracking during countdown
+  // Hand detection runs on its own interval — completely decoupled from rAF.
+  // This prevents async ML inference from blocking/stuttering the game loop.
   useEffect(() => {
-    let trackingInterval: NodeJS.Timeout;
-    if (gameState.status === "countdown") {
-      trackingInterval = setInterval(() => {
+    const shouldDetect = gameState.status === "playing" || gameState.status === "countdown";
+    if (shouldDetect) {
+      overlayDimsSetRef.current = false; // reset on status change
+      // Run detection as fast as the model allows (re-entry guard prevents overlap)
+      detectionIntervalRef.current = setInterval(() => {
         detectPosition();
-      }, 50);
+      }, 40); // ~25 FPS cap for detection
     }
     return () => {
-      if (trackingInterval) clearInterval(trackingInterval);
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+        detectionIntervalRef.current = null;
+      }
     };
   }, [gameState.status, detectPosition]);
 
@@ -1142,6 +1229,7 @@ const TangkapHijaiyahGame = () => {
   useEffect(() => {
     return () => {
       cancelAnimationFrame(animationFrameRef.current);
+      if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
       stopCamera();
       cleanupHandTracking();
       cleanupSFX();
@@ -1192,7 +1280,7 @@ const TangkapHijaiyahGame = () => {
             <p className="text-[#BE9D77] mt-6 text-xl font-semibold">
               Bersiap-siap!
             </p>
-            {handResult?.detected ? (
+            {isHandDetected ? (
               <p className="text-[#14AE5C] mt-3 text-sm font-medium">
                 ✋ Tangan Terdeteksi
               </p>
@@ -1276,15 +1364,20 @@ const TangkapHijaiyahGame = () => {
                 return (
                   <div
                     key={card.id}
+                    ref={(el) => {
+                      if (el) cardElementsRef.current.set(card.id, el);
+                      else cardElementsRef.current.delete(card.id);
+                    }}
                     className="absolute z-5"
                     style={{
                       left: getLaneCenter(card.lane),
                       top: card.y,
                       transform: "translateX(-50%)",
+                      willChange: "top",
                     }}
                   >
                     <div className="flex flex-col items-center justify-center w-21 h-25 sm:w-25 sm:h-30 md:w-30 md:h-35 rounded-2xl shadow-md border border-[#B8CCE0]/50 bg-[#CDDFEE] transition-none">
-                      <span className="text-3xl sm:text-4xl md:text-5xl font-arabic font-bold text-[#4A5568]">
+                      <span className="text-5xl sm:text-6xl md:text-7xl font-arabic font-bold text-[#4A5568]">
                         {card.letter}
                       </span>
                     </div>
@@ -1316,12 +1409,12 @@ const TangkapHijaiyahGame = () => {
                 <div className="absolute top-3 right-3 z-20">
                   <div
                     className={`w-3 h-3 rounded-full shadow-sm ${
-                      handResult?.detected
+                      isHandDetected
                         ? "bg-[#14AE5C]"
                         : "bg-amber-400 animate-pulse"
                     }`}
                     title={
-                      handResult?.detected
+                      isHandDetected
                         ? "Tangan terdeteksi"
                         : "Tunjukkan tangan"
                     }
