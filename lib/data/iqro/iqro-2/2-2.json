@@ -11,43 +11,153 @@
   "content": [
     {
       "order_id": 1,
-      "latin": "NA = DZA.... NABA = NABA",
-      "arabic": "نَ = ذَ....    نَبَ = نَبَ"
+      "latin": "NA = NA....",
+      "arabic": "نَ = نَ...."
     },
     {
       "order_id": 2,
-      "latin": "NANA NATANA NABABA BANANA",
-      "arabic": "نَنَ    نَتَنَ . نَبَبَ    بَنَنَ"
+      "latin": "NABA = NABA",
+      "arabic": "نَبَ = نَبَ"
     },
     {
       "order_id": 3,
-      "latin": "NABATA BANATA TSABANA NATSABA",
-      "arabic": "نَبَتَ    بَنَتَ . ثَبَنَ    نَتَبَ"
+      "latin": "NANANA",
+      "arabic": "نَنَنَ"
     },
     {
       "order_id": 4,
-      "latin": "RABANA BANARA BADZANA NABADZA",
-      "arabic": "رَبَنَ    بَنَرَ . بَذَنَ    نَبَذَ"
+      "latin": "NATANA",
+      "arabic": "نَتَنَ"
     },
     {
       "order_id": 5,
-      "latin": "BADARA NADZARA DZANABA WANADZA",
-      "arabic": "بَدَرَ    نَذَرَ . ذَنَبَ    وَنَذَ"
+      "latin": "NABABA",
+      "arabic": "نَبَبَ"
     },
     {
       "order_id": 6,
-      "latin": "DZARAHA NAZA'A NABAA NABA-A",
-      "arabic": "ذَرَحَ    نَزَعَ . نَبَاَ    نَبَأَ"
+      "latin": "BANANA",
+      "arabic": "بَنَنَ"
     },
     {
       "order_id": 7,
-      "latin": "TSABATA TATSABA WANAA NAWAFA",
-      "arabic": "ثَبَتَ    تَثَبَ . وَنَأَ    نَوَفَ"
+      "latin": "NABATA",
+      "arabic": "نَبَتَ"
     },
     {
       "order_id": 8,
-      "latin": "BADANA DANATA WANANA NAWANA",
-      "arabic": "بَدَنَ    دَنَتَ . وَنَنَ    نَوَنَ"
+      "latin": "BANATA",
+      "arabic": "بَنَتَ"
+    },
+    {
+      "order_id": 9,
+      "latin": "TSABANA",
+      "arabic": "ثَبَنَ"
+    },
+    {
+      "order_id": 10,
+      "latin": "NATSABA",
+      "arabic": "نَتَبَ"
+    },
+    {
+      "order_id": 11,
+      "latin": "RABANA",
+      "arabic": "رَبَنَ"
+    },
+    {
+      "order_id": 12,
+      "latin": "BANARA",
+      "arabic": "بَنَرَ"
+    },
+    {
+      "order_id": 13,
+      "latin": "BADZANA",
+      "arabic": "بَذَنَ"
+    },
+    {
+      "order_id": 14,
+      "latin": "NABADZA",
+      "arabic": "نَبَذَ"
+    },
+    {
+      "order_id": 15,
+      "latin": "BADARA",
+      "arabic": "بَدَرَ"
+    },
+    {
+      "order_id": 16,
+      "latin": "NADZARA",
+      "arabic": "نَذَرَ"
+    },
+    {
+      "order_id": 17,
+      "latin": "DZANABA",
+      "arabic": "ذَنَبَ"
+    },
+    {
+      "order_id": 18,
+      "latin": "WANADZA",
+      "arabic": "وَنَذَ"
+    },
+    {
+      "order_id": 19,
+      "latin": "DZARAHA",
+      "arabic": "ذَرَحَ"
+    },
+    {
+      "order_id": 20,
+      "latin": "NAZA'A",
+      "arabic": "نَزَعَ"
+    },
+    {
+      "order_id": 21,
+      "latin": "NABAA",
+      "arabic": "نَبَاَ"
+    },
+    {
+      "order_id": 22,
+      "latin": "NABA-A",
+      "arabic": "نَبَأَ"
+    },
+    {
+      "order_id": 23,
+      "latin": "TSABATA",
+      "arabic": "ثَبَتَ"
+    },
+    {
+      "order_id": 24,
+      "latin": "TATSABA",
+      "arabic": "تَثَبَ"
+    },
+    {
+      "order_id": 25,
+      "latin": "WANAA",
+      "arabic": "وَنَأَ"
+    },
+    {
+      "order_id": 26,
+      "latin": "NAWAFA",
+      "arabic": "نَوَفَ"
+    },
+    {
+      "order_id": 27,
+      "latin": "BADANA",
+      "arabic": "بَدَنَ"
+    },
+    {
+      "order_id": 28,
+      "latin": "DANATA",
+      "arabic": "دَنَتَ"
+    },
+    {
+      "order_id": 29,
+      "latin": "WANANA",
+      "arabic": "وَنَنَ"
+    },
+    {
+      "order_id": 30,
+      "latin": "NAWANA",
+      "arabic": "نَوَنَ"
     }
   ]
 }

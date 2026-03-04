@@ -59,6 +59,11 @@ const SILENT_AUDIO_SRC =
   "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
 
 // ============================================
+// FATHAH (baris atas) — short 'a' vowel diacritic
+// ============================================
+const FATHAH = '\u064E'; // Arabic combining fathah
+
+// ============================================
 // GAME CONFIGURATION
 // ============================================
 // Fall speeds are in **pixels per second** (frame-rate independent via delta-time).
@@ -69,7 +74,7 @@ const PLATFORM_SPEED: Record<
 > = {
   desktop: { base: 120, increment: 25 },
   ios: { base: 100, increment: 25 },
-  android: { base: 170, increment: 25 },
+  android: { base: 160, increment: 25 },
 };
 
 const PLATFORM_COLLISION_SCALE: Record<DevicePlatform, number> = {
@@ -1529,9 +1534,9 @@ const TangkapHijaiyahGame = () => {
                       willChange: "top",
                     }}
                   >
-                    <div className="flex flex-col items-center justify-center w-21 h-25 sm:w-25 sm:h-30 md:w-30 md:h-35 rounded-2xl shadow-md border border-[#B8CCE0]/50 bg-[#CDDFEE] transition-none">
-                      <span className="text-5xl sm:text-6xl md:text-7xl font-arabic font-bold text-[#4A5568]">
-                        {card.letter}
+                    <div className="flex flex-col items-center justify-center w-21 h-28 sm:w-25 sm:h-33 md:w-30 md:h-38 rounded-2xl shadow-md border border-[#B8CCE0]/50 bg-[#CDDFEE] transition-none">
+                      <span className="text-5xl sm:text-6xl md:text-7xl font-arabic font-bold text-[#4A5568] leading-none">
+                        {card.letter + FATHAH}
                       </span>
                     </div>
                   </div>
@@ -1588,7 +1593,7 @@ const TangkapHijaiyahGame = () => {
                     Tangkap
                   </span>
                   <span className="text-4xl font-arabic font-bold text-[#E37100] leading-none -mt-1">
-                    {currentRound.targetLetter}
+                    {currentRound.targetLetter + FATHAH}
                   </span>
                   <button
                     onClick={() => playAudio(currentRound.targetAudio)}

@@ -11,43 +11,153 @@
   "content": [
     {
       "order_id": 1,
-      "latin": "JA RA = JARA HAJARA",
-      "arabic": "جَ رَ = جَرَ    حَجَرَ"
+      "latin": "JA RA = JARA",
+      "arabic": "جَ رَ = جَرَ"
     },
     {
       "order_id": 2,
-      "latin": "BAJA JABA KHADA NADA",
-      "arabic": "بَجَ . جَبَ    خَدَ . نَدَ"
+      "latin": "HAJARA",
+      "arabic": "حَجَرَ"
     },
     {
       "order_id": 3,
-      "latin": "SYAJA HAWA KHAZA YATA",
-      "arabic": "شَجَ . هَـوَ    خَزَ . يَتَ"
+      "latin": "BAJA",
+      "arabic": "بَجَ"
     },
     {
       "order_id": 4,
-      "latin": "NAJA HAYA JASA YASYA",
-      "arabic": "نَجَ . حَيَ    جَسَ . يَشَ"
+      "latin": "JABA",
+      "arabic": "جَبَ"
     },
     {
       "order_id": 5,
-      "latin": "MASYA RASHA YADHA KHATHA",
-      "arabic": "مَشَ . رَصَ    يَضَ . خَطَ"
+      "latin": "KHADA",
+      "arabic": "خَدَ"
     },
     {
       "order_id": 6,
-      "latin": "ZHANNA DA'A GHAZA NAFA",
-      "arabic": "ظَنَ . دَعَ    غَزَ . نَفَ"
+      "latin": "NADA",
+      "arabic": "نَدَ"
     },
     {
       "order_id": 7,
-      "latin": "YAQA JAKA KHALA YAYA",
-      "arabic": "يَقَ . جَكَ    خَلَ . يَيَ"
+      "latin": "SYAJA",
+      "arabic": "شَجَ"
     },
     {
       "order_id": 8,
-      "latin": "HADZA YATAMA NAJAHA JAYA",
-      "arabic": "هَذَ . يَتَمَ    نَجَحَ . جَيَ"
+      "latin": "HAWA",
+      "arabic": "هَـوَ"
+    },
+    {
+      "order_id": 9,
+      "latin": "KHAZA",
+      "arabic": "خَزَ"
+    },
+    {
+      "order_id": 10,
+      "latin": "YATA",
+      "arabic": "يَتَ"
+    },
+    {
+      "order_id": 11,
+      "latin": "NAJA",
+      "arabic": "نَجَ"
+    },
+    {
+      "order_id": 12,
+      "latin": "HAYA",
+      "arabic": "حَيَ"
+    },
+    {
+      "order_id": 13,
+      "latin": "JASA",
+      "arabic": "جَسَ"
+    },
+    {
+      "order_id": 14,
+      "latin": "YASYA",
+      "arabic": "يَشَ"
+    },
+    {
+      "order_id": 15,
+      "latin": "MASYA",
+      "arabic": "مَشَ"
+    },
+    {
+      "order_id": 16,
+      "latin": "RASHA",
+      "arabic": "رَصَ"
+    },
+    {
+      "order_id": 17,
+      "latin": "YADHA",
+      "arabic": "يَضَ"
+    },
+    {
+      "order_id": 18,
+      "latin": "KHATHA",
+      "arabic": "خَطَ"
+    },
+    {
+      "order_id": 19,
+      "latin": "ZHANNA",
+      "arabic": "ظَنَ"
+    },
+    {
+      "order_id": 20,
+      "latin": "DA'A",
+      "arabic": "دَعَ"
+    },
+    {
+      "order_id": 21,
+      "latin": "GHAZA",
+      "arabic": "غَزَ"
+    },
+    {
+      "order_id": 22,
+      "latin": "NAFA",
+      "arabic": "نَفَ"
+    },
+    {
+      "order_id": 23,
+      "latin": "YAQA",
+      "arabic": "يَقَ"
+    },
+    {
+      "order_id": 24,
+      "latin": "JAKA",
+      "arabic": "جَكَ"
+    },
+    {
+      "order_id": 25,
+      "latin": "KHALA",
+      "arabic": "خَلَ"
+    },
+    {
+      "order_id": 26,
+      "latin": "YAYA",
+      "arabic": "يَيَ"
+    },
+    {
+      "order_id": 27,
+      "latin": "HADZA",
+      "arabic": "هَذَ"
+    },
+    {
+      "order_id": 28,
+      "latin": "YATAMA",
+      "arabic": "يَتَمَ"
+    },
+    {
+      "order_id": 29,
+      "latin": "NAJAHA",
+      "arabic": "نَجَحَ"
+    },
+    {
+      "order_id": 30,
+      "latin": "JAYA",
+      "arabic": "جَيَ"
     }
   ]
 }

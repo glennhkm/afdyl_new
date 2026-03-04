@@ -11,43 +11,143 @@
   "content": [
     {
       "order_id": 1,
-      "latin": "SA DA = SADA SYA RA = SYARA",
-      "arabic": "سَ دَ = سَدَ    شَ رَ = شَرَ"
+      "latin": "SA DA = SADA",
+      "arabic": "سَ دَ = سَدَ"
     },
     {
       "order_id": 2,
-      "latin": "SHA DA = SHADA DHA RA = DHARA",
-      "arabic": "صَ دَ = صَدَ    ضَ رَ = ضَرَ"
+      "latin": "SYA RA = SYARA",
+      "arabic": "شَ رَ = شَرَ"
     },
     {
       "order_id": 3,
-      "latin": "SANA BASA SYATA YASA",
-      "arabic": "سَنَ    بَسَ    شَتَ    يَسَ"
+      "latin": "SHA DA = SHADA",
+      "arabic": "صَ دَ = صَدَ"
     },
     {
       "order_id": 4,
-      "latin": "TSARA SHAHA NAMA 'ADZA",
-      "arabic": "ثَرَ    صَحَ    نَمَ    عَ ذَ"
+      "latin": "DHA RA = DHARA",
+      "arabic": "ضَ رَ = ضَرَ"
     },
     {
       "order_id": 5,
-      "latin": "SAYA SHALA GHAWA SYAQA",
-      "arabic": "سَيَ    صَلَ    غَـوَ    شَقَ"
+      "latin": "SANA",
+      "arabic": "سَنَ"
     },
     {
       "order_id": 6,
-      "latin": "NAZHA DHAFA THAHA NAZA",
-      "arabic": "نَظَ    ضَفَ    طَهَ    نَزَ"
+      "latin": "BASA",
+      "arabic": "بَسَ"
     },
     {
       "order_id": 7,
-      "latin": "QAKA KHASYA NADZA SHADA",
-      "arabic": "قَكَ    خَشَ    نَذَ    صَدَ"
+      "latin": "SYATA",
+      "arabic": "شَتَ"
     },
     {
       "order_id": 8,
-      "latin": "JAMA SYA-A YAYA YADHA",
-      "arabic": "جَمَ    شَأَ    يَيَ    يَضَ"
+      "latin": "YASA",
+      "arabic": "يَسَ"
+    },
+    {
+      "order_id": 9,
+      "latin": "TSARA",
+      "arabic": "ثَرَ"
+    },
+    {
+      "order_id": 10,
+      "latin": "SHAHA",
+      "arabic": "صَحَ"
+    },
+    {
+      "order_id": 11,
+      "latin": "NAMA",
+      "arabic": "نَمَ"
+    },
+    {
+      "order_id": 12,
+      "latin": "'ADZA",
+      "arabic": "عَذَ"
+    },
+    {
+      "order_id": 13,
+      "latin": "SAYA",
+      "arabic": "سَيَ"
+    },
+    {
+      "order_id": 14,
+      "latin": "SHALA",
+      "arabic": "صَلَ"
+    },
+    {
+      "order_id": 15,
+      "latin": "GHAWA",
+      "arabic": "غَـوَ"
+    },
+    {
+      "order_id": 16,
+      "latin": "SYAQA",
+      "arabic": "شَقَ"
+    },
+    {
+      "order_id": 17,
+      "latin": "NAZHA",
+      "arabic": "نَظَ"
+    },
+    {
+      "order_id": 18,
+      "latin": "DHAFA",
+      "arabic": "ضَفَ"
+    },
+    {
+      "order_id": 19,
+      "latin": "THAHA",
+      "arabic": "طَهَ"
+    },
+    {
+      "order_id": 20,
+      "latin": "NAZA",
+      "arabic": "نَزَ"
+    },
+    {
+      "order_id": 21,
+      "latin": "QAKA",
+      "arabic": "قَكَ"
+    },
+    {
+      "order_id": 22,
+      "latin": "KHASYA",
+      "arabic": "خَشَ"
+    },
+    {
+      "order_id": 23,
+      "latin": "NADZA",
+      "arabic": "نَذَ"
+    },
+    {
+      "order_id": 24,
+      "latin": "SHADA",
+      "arabic": "صَدَ"
+    },
+    {
+      "order_id": 25,
+      "latin": "JAMA",
+      "arabic": "جَمَ"
+    },
+    {
+      "order_id": 26,
+      "latin": "SYA-A",
+      "arabic": "شَأَ"
+    },
+    {
+      "order_id": 27,
+      "latin": "YAYA",
+      "arabic": "يَيَ"
+    },
+    {
+      "order_id": 28,
+      "latin": "YADHA",
+      "arabic": "يَضَ"
     }
   ]
 }

@@ -11,43 +11,143 @@
   "content": [
     {
       "order_id": 1,
-      "latin": "BATA = BADA = BADA",
-      "arabic": "بَتَ = بَ دَ = بَ دَ"
+      "latin": "BA TA = BATA",
+      "arabic": "بَ تَ = بَتَ"
     },
     {
       "order_id": 2,
-      "latin": "TAR = TAR = TARU = TARU",
-      "arabic": "تَر = تَر = تَرَ وُ = تَر وُ"
+      "latin": "BA DA = BADA",
+      "arabic": "بَ دَ = بَدَ"
     },
     {
       "order_id": 3,
-      "latin": "TATA TADA TABA TAWU",
-      "arabic": "تَتَ    تَدَ    تَبَ    تَوُ"
+      "latin": "TA RA = TARA",
+      "arabic": "تَ رَ = تَرَ"
     },
     {
       "order_id": 4,
-      "latin": "BABA BADZA BATA TAZA",
-      "arabic": "بَبَ    بَذَ    بَتَ    تَزَ"
+      "latin": "TA WA = TAWA",
+      "arabic": "تَ وَ = تَوَ"
     },
     {
       "order_id": 5,
-      "latin": "BATHA TADZA THATA ZATHA",
-      "arabic": "بَثَ    تَذَ    ثَتَ    زَثَ"
+      "latin": "TATA",
+      "arabic": "تَتَ"
     },
     {
       "order_id": 6,
-      "latin": "BA'A BAATA TA'A TAATA",
-      "arabic": "بَأَ    بَاتَ    تَأَ    تَاتَ"
+      "latin": "TADA",
+      "arabic": "تَدَ"
     },
     {
       "order_id": 7,
-      "latin": "THABA THARU BARU TAWA",
-      "arabic": "ثَبَ    ثَرُ    بَرُ    تَوَ"
+      "latin": "TABA",
+      "arabic": "تَبَ"
     },
     {
       "order_id": 8,
-      "latin": "TOHA JAKA KAY JASA",
-      "arabic": "طَهَ    جَكَ    كَى    جَسَ"
+      "latin": "TAWU",
+      "arabic": "تَوُ"
+    },
+    {
+      "order_id": 9,
+      "latin": "BABA",
+      "arabic": "بَبَ"
+    },
+    {
+      "order_id": 10,
+      "latin": "BADZA",
+      "arabic": "بَذَ"
+    },
+    {
+      "order_id": 11,
+      "latin": "BATA",
+      "arabic": "بَتَ"
+    },
+    {
+      "order_id": 12,
+      "latin": "TAZA",
+      "arabic": "تَزَ"
+    },
+    {
+      "order_id": 13,
+      "latin": "BATHA",
+      "arabic": "بَثَ"
+    },
+    {
+      "order_id": 14,
+      "latin": "TADZA",
+      "arabic": "تَذَ"
+    },
+    {
+      "order_id": 15,
+      "latin": "THATA",
+      "arabic": "ثَتَ"
+    },
+    {
+      "order_id": 16,
+      "latin": "ZATHA",
+      "arabic": "زَثَ"
+    },
+    {
+      "order_id": 17,
+      "latin": "BA'A",
+      "arabic": "بَأَ"
+    },
+    {
+      "order_id": 18,
+      "latin": "BAATA",
+      "arabic": "بَاتَ"
+    },
+    {
+      "order_id": 19,
+      "latin": "TA'A",
+      "arabic": "تَأَ"
+    },
+    {
+      "order_id": 20,
+      "latin": "TAATA",
+      "arabic": "تَاتَ"
+    },
+    {
+      "order_id": 21,
+      "latin": "THABA",
+      "arabic": "ثَبَ"
+    },
+    {
+      "order_id": 22,
+      "latin": "THARU",
+      "arabic": "ثَرُ"
+    },
+    {
+      "order_id": 23,
+      "latin": "BARU",
+      "arabic": "بَرُ"
+    },
+    {
+      "order_id": 24,
+      "latin": "TAWA",
+      "arabic": "تَوَ"
+    },
+    {
+      "order_id": 25,
+      "latin": "TOHA",
+      "arabic": "طَهَ"
+    },
+    {
+      "order_id": 26,
+      "latin": "JAKA",
+      "arabic": "جَكَ"
+    },
+    {
+      "order_id": 27,
+      "latin": "KAY",
+      "arabic": "كَى"
+    },
+    {
+      "order_id": 28,
+      "latin": "JASA",
+      "arabic": "جَسَ"
     }
   ]
 }

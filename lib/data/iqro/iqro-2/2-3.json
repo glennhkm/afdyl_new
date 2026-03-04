@@ -11,43 +11,153 @@
   "content": [
     {
       "order_id": 1,
-      "latin": "YA = YA.... YATA = YATA",
-      "arabic": "يَ = يَـ....    يَتَ = يَتَ"
+      "latin": "YA = YA....",
+      "arabic": "يَ = يَـ...."
     },
     {
       "order_id": 2,
-      "latin": "RABBI YABARA RANNI YANARA",
-      "arabic": "رَبِّي    يَبَرَ . رَنِّي    يَنَرَ"
+      "latin": "YATA = YATA",
+      "arabic": "يَتَ = يَتَ"
     },
     {
       "order_id": 3,
-      "latin": "BAYYINA NABIYY YADANA DANIYY",
-      "arabic": "بَيِّنَ    نَبِيّ . يَدَنَ    دَنِيّ"
+      "latin": "RABBI",
+      "arabic": "رَبِّي"
     },
     {
       "order_id": 4,
-      "latin": "DZAHABA NAZALA NADZARA YADAYI",
-      "arabic": "ذَهَبَ    نَزَلَ . نَذَرَ    يَدَيِ"
+      "latin": "YABARA",
+      "arabic": "يَبَرَ"
     },
     {
       "order_id": 5,
-      "latin": "AZAGHA BATARA ZAYYINA ZANIYY",
-      "arabic": "اَزَغَ    بَتَرَ . زَيِّنَ    زَنِيّ"
+      "latin": "RANNI",
+      "arabic": "رَنِّي"
     },
     {
       "order_id": 6,
-      "latin": "ATSATSA TSANA-A YAABA AYATA",
-      "arabic": "اَثَثَ    ثَنَأَ . يَابَ    اَيَتَ"
+      "latin": "YANARA",
+      "arabic": "يَنَرَ"
     },
     {
       "order_id": 7,
-      "latin": "RAZAQA NAZHARA ATIYY WANADA",
-      "arabic": "رَزَقَ    نَظَرَ . اَتِيّ    وَنَدَ"
+      "latin": "BAYYINA",
+      "arabic": "بَيِّنَ"
     },
     {
       "order_id": 8,
-      "latin": "YAYI NAMARA SAYI YANA",
-      "arabic": "يَـيِي    نَـمَرَ    سَـيِ    يَـنَ"
+      "latin": "NABIYY",
+      "arabic": "نَبِيّ"
+    },
+    {
+      "order_id": 9,
+      "latin": "YADANA",
+      "arabic": "يَدَنَ"
+    },
+    {
+      "order_id": 10,
+      "latin": "DANIYY",
+      "arabic": "دَنِيّ"
+    },
+    {
+      "order_id": 11,
+      "latin": "DZAHABA",
+      "arabic": "ذَهَبَ"
+    },
+    {
+      "order_id": 12,
+      "latin": "NAZALA",
+      "arabic": "نَزَلَ"
+    },
+    {
+      "order_id": 13,
+      "latin": "NADZARA",
+      "arabic": "نَذَرَ"
+    },
+    {
+      "order_id": 14,
+      "latin": "YADAYI",
+      "arabic": "يَدَيِ"
+    },
+    {
+      "order_id": 15,
+      "latin": "AZAGHA",
+      "arabic": "اَزَغَ"
+    },
+    {
+      "order_id": 16,
+      "latin": "BATARA",
+      "arabic": "بَتَرَ"
+    },
+    {
+      "order_id": 17,
+      "latin": "ZAYYINA",
+      "arabic": "زَيِّنَ"
+    },
+    {
+      "order_id": 18,
+      "latin": "ZANIYY",
+      "arabic": "زَنِيّ"
+    },
+    {
+      "order_id": 19,
+      "latin": "ATSATSA",
+      "arabic": "اَثَثَ"
+    },
+    {
+      "order_id": 20,
+      "latin": "TSANA-A",
+      "arabic": "ثَنَأَ"
+    },
+    {
+      "order_id": 21,
+      "latin": "YAABA",
+      "arabic": "يَابَ"
+    },
+    {
+      "order_id": 22,
+      "latin": "AYATA",
+      "arabic": "اَيَتَ"
+    },
+    {
+      "order_id": 23,
+      "latin": "RAZAQA",
+      "arabic": "رَزَقَ"
+    },
+    {
+      "order_id": 24,
+      "latin": "NAZHARA",
+      "arabic": "نَظَرَ"
+    },
+    {
+      "order_id": 25,
+      "latin": "ATIYY",
+      "arabic": "اَتِيّ"
+    },
+    {
+      "order_id": 26,
+      "latin": "WANADA",
+      "arabic": "وَنَدَ"
+    },
+    {
+      "order_id": 27,
+      "latin": "YAYI",
+      "arabic": "يَـيِي"
+    },
+    {
+      "order_id": 28,
+      "latin": "NAMARA",
+      "arabic": "نَـمَرَ"
+    },
+    {
+      "order_id": 29,
+      "latin": "SAYI",
+      "arabic": "سَـيِ"
+    },
+    {
+      "order_id": 30,
+      "latin": "YANA",
+      "arabic": "يَـنَ"
     }
   ]
 }

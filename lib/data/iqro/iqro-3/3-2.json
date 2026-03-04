@@ -11,38 +11,143 @@
   "content": [
     {
       "order_id": 1,
-      "latin": "FA'ALA FAA'ILI HASADA HAASIDI",
-      "arabic": "فَعَلَ    فَاعِلِ    حَسَدَ    حَاسِدِ"
+      "latin": "FA'ALA",
+      "arabic": "فَعَلَ"
     },
     {
       "order_id": 2,
-      "latin": "KATABA KAATIBI JALASA JAALISI",
-      "arabic": "كَتَبَ    كَاتِبِ    جَلَسَ    جَالِسِ"
+      "latin": "FAA'ILI",
+      "arabic": "فَاعِلِ"
     },
     {
       "order_id": 3,
-      "latin": "KHATHABA KHAATHIBI QARA-A QAARI-I",
-      "arabic": "خَطَبَ    خَاطِبِ    قَرَأَ    قَارِئِ"
+      "latin": "HASADA",
+      "arabic": "حَسَدَ"
     },
     {
       "order_id": 4,
-      "latin": "BAAYINA BAAYINI MAALIKA MAALIKI",
-      "arabic": "بَايِنَ    بَايِنِ    مَالِكَ    مَالِكِ"
+      "latin": "HAASIDI",
+      "arabic": "حَاسِدِ"
     },
     {
       "order_id": 5,
-      "latin": "'AALAMA 'AALIMI SYAAHADA SYAAHIDI",
-      "arabic": "عَالَمَ    عَالِمِ    شَاهَدَ    شَاهِدِ"
+      "latin": "KATABA",
+      "arabic": "كَتَبَ"
     },
     {
       "order_id": 6,
-      "latin": "SHIRAATHA JIHAADI THIBAAQI BILAADI",
-      "arabic": "صِرَاطَ    جِهَادِ    طِبَاقِ    بِلَادِ"
+      "latin": "KAATIBI",
+      "arabic": "كَاتِبِ"
     },
     {
       "order_id": 7,
-      "latin": "LIBAASA 'IMAADI FAA'ILI GHAFFAARA",
-      "arabic": "لِبَاسَ    عِمَادِ    فَاعِلِ    غَفَّارَ"
+      "latin": "JALASA",
+      "arabic": "جَلَسَ"
+    },
+    {
+      "order_id": 8,
+      "latin": "JAALISI",
+      "arabic": "جَالِسِ"
+    },
+    {
+      "order_id": 9,
+      "latin": "KHATHABA",
+      "arabic": "خَطَبَ"
+    },
+    {
+      "order_id": 10,
+      "latin": "KHAATHIBI",
+      "arabic": "خَاطِبِ"
+    },
+    {
+      "order_id": 11,
+      "latin": "QARA-A",
+      "arabic": "قَرَأَ"
+    },
+    {
+      "order_id": 12,
+      "latin": "QAARI-I",
+      "arabic": "قَارِئِ"
+    },
+    {
+      "order_id": 13,
+      "latin": "BAAYINA",
+      "arabic": "بَايِنَ"
+    },
+    {
+      "order_id": 14,
+      "latin": "BAAYINI",
+      "arabic": "بَايِنِ"
+    },
+    {
+      "order_id": 15,
+      "latin": "MAALIKA",
+      "arabic": "مَالِكَ"
+    },
+    {
+      "order_id": 16,
+      "latin": "MAALIKI",
+      "arabic": "مَالِكِ"
+    },
+    {
+      "order_id": 17,
+      "latin": "'AALAMA",
+      "arabic": "عَالَمَ"
+    },
+    {
+      "order_id": 18,
+      "latin": "'AALIMI",
+      "arabic": "عَالِمِ"
+    },
+    {
+      "order_id": 19,
+      "latin": "SYAAHADA",
+      "arabic": "شَاهَدَ"
+    },
+    {
+      "order_id": 20,
+      "latin": "SYAAHIDI",
+      "arabic": "شَاهِدِ"
+    },
+    {
+      "order_id": 21,
+      "latin": "SHIRAATHA",
+      "arabic": "صِرَاطَ"
+    },
+    {
+      "order_id": 22,
+      "latin": "JIHAADI",
+      "arabic": "جِهَادِ"
+    },
+    {
+      "order_id": 23,
+      "latin": "THIBAAQI",
+      "arabic": "طِبَاقِ"
+    },
+    {
+      "order_id": 24,
+      "latin": "BILAADI",
+      "arabic": "بِلَادِ"
+    },
+    {
+      "order_id": 25,
+      "latin": "LIBAASA",
+      "arabic": "لِبَاسَ"
+    },
+    {
+      "order_id": 26,
+      "latin": "'IMAADI",
+      "arabic": "عِمَادِ"
+    },
+    {
+      "order_id": 27,
+      "latin": "FAA'ILI",
+      "arabic": "فَاعِلِ"
+    },
+    {
+      "order_id": 28,
+      "latin": "GHAFFAARA",
+      "arabic": "غَفَّارَ"
     }
   ]
 }

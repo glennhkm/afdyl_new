@@ -11,31 +11,106 @@
   "content": [
     {
       "order_id": 1,
-      "latin": "TI TA DA DI NA NI MA MI",
-      "arabic": "تِ تَ    دَ دِ    نَ نِ    مَ مِ"
+      "latin": "TI TA",
+      "arabic": "تِ تَ"
     },
     {
       "order_id": 2,
-      "latin": "BA BI BI BI TA TI TI TI",
-      "arabic": "بَ بِ    بِ بِ    تَ تِ    تِ تِ"
+      "latin": "DA DI",
+      "arabic": "دَ دِ"
     },
     {
       "order_id": 3,
-      "latin": "NABATA NABATI NAJASA NAJASI",
-      "arabic": "نَبَتَ    نَبَتِ    نَجَسَ    نَجَسِ"
+      "latin": "NA NI",
+      "arabic": "نَ نِ"
     },
     {
       "order_id": 4,
-      "latin": "BALADA BALADI HASANA HASANI",
-      "arabic": "بَلَدَ    بَلَدِ    حَسَنَ    حَسَنِ"
+      "latin": "MA MI",
+      "arabic": "مَ مِ"
     },
     {
       "order_id": 5,
-      "latin": "'AMALA SYAHIDA FAHIMA LAZIMA",
-      "arabic": "عَمَلَ    شَهِدَ    فَهِمَ    لَزِمَ"
+      "latin": "BA BI",
+      "arabic": "بَ بِ"
     },
     {
       "order_id": 6,
+      "latin": "BI BI",
+      "arabic": "بِ بِ"
+    },
+    {
+      "order_id": 7,
+      "latin": "TA TI",
+      "arabic": "تَ تِ"
+    },
+    {
+      "order_id": 8,
+      "latin": "TI TI",
+      "arabic": "تِ تِ"
+    },
+    {
+      "order_id": 9,
+      "latin": "NABATA",
+      "arabic": "نَبَتَ"
+    },
+    {
+      "order_id": 10,
+      "latin": "NABATI",
+      "arabic": "نَبَتِ"
+    },
+    {
+      "order_id": 11,
+      "latin": "NAJASA",
+      "arabic": "نَجَسَ"
+    },
+    {
+      "order_id": 12,
+      "latin": "NAJASI",
+      "arabic": "نَجَسِ"
+    },
+    {
+      "order_id": 13,
+      "latin": "BALADA",
+      "arabic": "بَلَدَ"
+    },
+    {
+      "order_id": 14,
+      "latin": "BALADI",
+      "arabic": "بَلَدِ"
+    },
+    {
+      "order_id": 15,
+      "latin": "HASANA",
+      "arabic": "حَسَنَ"
+    },
+    {
+      "order_id": 16,
+      "latin": "HASANI",
+      "arabic": "حَسَنِ"
+    },
+    {
+      "order_id": 17,
+      "latin": "'AMALA",
+      "arabic": "عَمَلَ"
+    },
+    {
+      "order_id": 18,
+      "latin": "SYAHIDA",
+      "arabic": "شَهِدَ"
+    },
+    {
+      "order_id": 19,
+      "latin": "FAHIMA",
+      "arabic": "فَهِمَ"
+    },
+    {
+      "order_id": 20,
+      "latin": "LAZIMA",
+      "arabic": "لَزِمَ"
+    },
+    {
+      "order_id": 21,
       "latin": "BA TI JA KHI DA DI DZA FI FA I MA RA MI",
       "arabic": "بَ تِ جَ خِ دَ دِ ذَ فِ فَ اِ مَ رَ مِ"
     }
